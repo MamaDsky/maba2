@@ -6,7 +6,8 @@ require_once 'config/database.php';
 $db = (new Database())->getConnection();
 
 // Inisialisasi Variabel Pelacakan
-$order_code = isset($_GET['order_id']) ? trim(htmlspecialchars($_GET['order_id'])) : '';
+// Ubah bagian ini di track.php
+$order_code = isset($_GET['order_id']) ? trim(htmlspecialchars($_GET['order_id'])) : (isset($_GET['code']) ? trim(htmlspecialchars($_GET['code'])) : '');
 $order_data = null;
 $order_items = [];
 
@@ -246,6 +247,20 @@ $current_step = ($order_data && isset($status_steps[$order_data['status']])) ? $
             </div>
         </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    // Cek apakah URL mengandung parameter success=1
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('success') && urlParams.get('success') == '1') {
+        Swal.fire({
+            icon: 'success',
+            title: 'Pembayaran Diterima!',
+            text: 'Bukti pembayaran Anda sedang diverifikasi oleh admin. Terima kasih!',
+            confirmButtonColor: '#06b7d2'
+        });
+    }
+</script>
 
     <script>
     function toggleCartDrawer() {
