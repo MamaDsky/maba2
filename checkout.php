@@ -1,4 +1,7 @@
 <?php
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
 require_once 'config/database.php';
 $db = (new Database())->getConnection();
 
@@ -6,60 +9,97 @@ $cart = $_SESSION['cart'] ?? [];
 $total_price = 0;
 $items = [];
 
+// Ekstraksi cart_key yang presisi untuk menghitung Total Harga
 if (!empty($cart)) {
-    $ids = implode(',', array_keys($cart));
-    $res = $db->query("SELECT * FROM products WHERE id IN ($ids)");
-    while ($row = $res->fetch_assoc()) {
-        $row['qty'] = $cart[$row['id']];
-        $row['subtotal'] = $row['price'] * $row['qty'];
-        $total_price += $row['subtotal'];
-        $items[] = $row;
+    foreach ($cart as $cart_key => $qty) {
+        $qty = intval($qty);
+        if ($qty <= 0) continue;
+
+        // Pecah ID produk dan ukurannya
+        $parts = explode('_', $cart_key);
+        $p_id = intval($parts[0]);
+        $size = isset($parts[1]) && $parts[1] !== '' ? $parts[1] : '';
+
+        $stmt = $db->prepare("SELECT id, name, price FROM products WHERE id = ?");
+        if ($stmt) {
+            $stmt->bind_param("i", $p_id);
+            $stmt->execute();
+            $res = $stmt->get_result();
+
+            if ($row = $res->fetch_assoc()) {
+                $row['qty'] = $qty;
+                $row['selected_size'] = $size; 
+                $row['subtotal'] = intval($row['price']) * $qty;
+                $total_price += $row['subtotal'];
+                $items[] = $row;
+            }
+            $stmt->close();
+        }
     }
 }
 
-// Langkah 1: Handle Submit Form & Refresh Halaman Otomatis
-$triggered_code = '';
-$triggered_total = 0;
+// Cek status apakah sedang diarahkan untuk membuka modal pembayaran
+$show_modal = isset($_GET['show_modal']) ? true : false;
+$modal_code = isset($_GET['code']) ? htmlspecialchars($_GET['code']) : '';
+$modal_total = isset($_GET['total']) ? intval($_GET['total']) : 0;
 
+// Langkah 1: Handle Submit Form Checkout
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_order'])) {
-    $batch_q = $db->query("SELECT id FROM batches WHERE is_active = 1 LIMIT 1");
-    $batch_id = ($b = $batch_q->fetch_assoc()) ? $b['id'] : 1;
-
-    $name = htmlspecialchars($_POST['name']);
-    $dept = htmlspecialchars($_POST['department']);
-    $phone = htmlspecialchars($_POST['phone']);
-    $address = htmlspecialchars($_POST['address']);
-    $order_code = "PO-" . date("Ymd") . "-" . strtoupper(substr(uniqid(), -4));
-
-    $stmt = $db->prepare("INSERT INTO orders (order_code, batch_id, customer_name, customer_department, customer_phone, customer_address, total_price) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("sissssi", $order_code, $batch_id, $name, $dept, $phone, $address, $total_price);
     
-    if ($stmt->execute()) {
-        $order_id = $db->insert_id;
-        $it_stmt = $db->prepare("INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)");
-        foreach ($items as $it) {
-            $it_stmt->bind_param("iiii", $order_id, $it['id'], $it['qty'], $it['price']);
-            $it_stmt->execute();
-        }
-        $_SESSION['cart'] = [];
+    // Cegah keranjang kosong masuk ke database
+    if (!empty($items)) {
+        $batch_q = $db->query("SELECT id FROM batches WHERE is_active = 1 LIMIT 1");
+        $batch_id = ($b = $batch_q->fetch_assoc()) ? $b['id'] : 1;
+
+        $name = htmlspecialchars($_POST['name']);
+        $dept = htmlspecialchars($_POST['department']);
+        $phone = htmlspecialchars($_POST['phone']);
+        $address = htmlspecialchars($_POST['address']);
+        $order_code = "PO-" . date("Ymd") . "-" . strtoupper(substr(uniqid(), -4));
+
+        $stmt = $db->prepare("INSERT INTO orders (order_code, batch_id, customer_name, customer_department, customer_phone, customer_address, total_price) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("sissssi", $order_code, $batch_id, $name, $dept, $phone, $address, $total_price);
         
-        $triggered_code = $order_code;
-        $triggered_total = $total_price;
+        if ($stmt->execute()) {
+            $order_id = $db->insert_id;
+            
+            $it_stmt = $db->prepare("INSERT INTO order_items (order_id, product_id, selected_size, quantity, price) VALUES (?, ?, ?, ?, ?)");
+            
+            foreach ($items as $it) {
+                $prod_id = $it['id'];
+                // Jika tidak ada ukuran, set NULL agar tersimpan rapi di DB
+                $sel_size = $it['selected_size'] !== '' ? $it['selected_size'] : NULL;
+                $item_qty = $it['qty'];
+                $item_price = intval($it['price']);
+                
+                $it_stmt->bind_param("iisii", $order_id, $prod_id, $sel_size, $item_qty, $item_price);
+                $it_stmt->execute();
+            }
+            
+            // Kosongkan keranjang di session
+            $_SESSION['cart'] = []; 
+            
+            // Redirect URL agar tidak terjadi error Double Form Submit Loop
+            header("Location: checkout.php?show_modal=1&code=" . $order_code . "&total=" . $total_price);
+            exit;
+        }
+    } else {
+        header("Location: products.php");
+        exit;
     }
 }
 
 // Langkah 2: Handle Upload Bukti Pembayaran dari Modal Pembayaran
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['upload_proof'])) {
-    $code = $_POST['order_code'];
+    $code = htmlspecialchars($_POST['order_code']);
     if (isset($_FILES['proof']) && $_FILES['proof']['error'] === 0) {
         $ext = pathinfo($_FILES['proof']['name'], PATHINFO_EXTENSION);
         $filename = "PROOF_" . $code . "_" . time() . "." . $ext;
         
         if (move_uploaded_file($_FILES['proof']['tmp_name'], "uploads/" . $filename)) {
-            $db->query("UPDATE orders SET payment_proof = '$filename' WHERE order_code = '$code'");
+            $db->query("UPDATE orders SET payment_proof = '$filename', status = 'Diproses' WHERE order_code = '$code'");
+            
             echo "<script>
-                localStorage.removeItem('pending_order_code');
-                localStorage.removeItem('pending_total');
                 window.location.href = 'track.php?code=" . $code . "&success=1';
             </script>";
             exit;
@@ -87,12 +127,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['upload_proof'])) {
             <a href="products.php" class="text-xs font-bold text-gray-400 hover:text-indigo-600 transition flex items-center gap-1">← Kembali ke halaman produk</a>
         </header>
 
-        <?php if(empty($items) && !isset($_POST['submit_order'])): ?>
+        <?php if(empty($items) && !$show_modal): ?>
             <div class="bg-white p-12 rounded-3xl text-center border border-gray-100 shadow-xs">
                 <p class="text-gray-400 italic">Keranjang belanja kosong. Silakan pilih produk maba terlebih dahulu.</p>
                 <a href="products.php" class="inline-block mt-6 bg-gray-900 hover:bg-gray-800 text-white px-6 py-3 rounded-2xl font-bold text-xs transition">Lihat Katalog Produk</a>
             </div>
-        <?php else: ?>
+        <?php elseif(!$show_modal): ?>
             
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <form method="POST" class="md:col-span-2 space-y-6">
@@ -135,6 +175,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['upload_proof'])) {
                                 <div class="py-3 flex justify-between items-center text-xs">
                                     <div class="max-w-[70%]">
                                         <p class="font-bold text-gray-800 truncate"><?= htmlspecialchars($it['name']); ?></p>
+                                        
+                                        <?php if(!empty($it['selected_size'])): ?>
+                                            <span class="inline-block bg-indigo-50 border border-indigo-100 text-indigo-600 font-black text-[9px] px-1.5 py-0.5 rounded-md mt-0.5 mb-0.5">Size: <?= htmlspecialchars($it['selected_size']); ?></span>
+                                        <?php endif; ?>
+                                        
                                         <p class="text-xxs text-gray-400 mt-0.5"><?= $it['qty']; ?>x @ Rp <?= number_format($it['price'], 0, ',', '.'); ?></p>
                                     </div>
                                     <p class="font-bold text-gray-900">Rp <?= number_format($it['subtotal'], 0, ',', '.'); ?></p>
@@ -167,7 +212,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['upload_proof'])) {
                 <p class="text-xxs text-gray-400 mt-1 uppercase tracking-widest font-bold">Langkah Terakhir: Verifikasi Pembayaran</p>
             </div>
             
-            <form method="POST" enctype="multipart/form-data" class="p-6 md:p-8 space-y-5">
+            <form method="POST" action="checkout.php" enctype="multipart/form-data" class="p-6 md:p-8 space-y-5">
                 <input type="hidden" name="order_code" id="modal_order_code">
                 
                 <div class="bg-gray-50 border border-gray-100 rounded-2xl p-4 flex justify-between items-center">
@@ -207,21 +252,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['upload_proof'])) {
     </div>
 
     <script>
-    <?php if(!empty($triggered_code)): ?>
-        localStorage.setItem('pending_order_code', '<?= $triggered_code; ?>');
-        localStorage.setItem('pending_total', '<?= $triggered_total; ?>');
-        window.location.reload(); // Paksa refresh setelah data masuk untuk memutus riwayat POST data form
-    <?php endif; ?>
-
     document.addEventListener('DOMContentLoaded', () => {
-        const savedCode = localStorage.getItem('pending_order_code');
-        const savedTotal = localStorage.getItem('pending_total');
-
-        if (savedCode && savedTotal) {
-            document.getElementById('modal_order_code').value = savedCode;
-            document.getElementById('modal_total_display').innerText = 'Rp ' + parseInt(savedTotal).toLocaleString('id-ID');
+        <?php if($show_modal): ?>
+            document.getElementById('modal_order_code').value = '<?= $modal_code; ?>';
+            document.getElementById('modal_total_display').innerText = 'Rp ' + parseInt(<?= $modal_total; ?>).toLocaleString('id-ID');
             document.getElementById('paymentModal').classList.remove('hidden');
-        }
+        <?php endif; ?>
     });
     </script>
 </body>

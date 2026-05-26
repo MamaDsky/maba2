@@ -39,18 +39,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_product'])) {
     $desc = htmlspecialchars($_POST['description']);
     $price = intval($_POST['price']);
     $type = $_POST['type'];
+    $available_sizes = htmlspecialchars($_POST['available_sizes']);
 
     if ($id > 0) {
         // Mode UPDATE data inti produk
-        $stmt = $db->prepare("UPDATE products SET name = ?, description = ?, price = ?, type = ? WHERE id = ?");
-        $stmt->bind_param("ssisi", $name, $desc, $price, $type, $id);
+        $stmt = $db->prepare("UPDATE products SET name = ?, description = ?, price = ?, type = ?, available_sizes = ? WHERE id = ?");
+        $stmt->bind_param("ssisss", $name, $desc, $price, $type, $available_sizes, $id);
         $stmt->execute();
         $product_id = $id;
         $_SESSION['swal'] = ['type' => 'success', 'title' => 'Diperbarui!', 'text' => 'Data produk berhasil diperbarui.'];
     } else {
         // Mode INSERT produk baru
-        $stmt = $db->prepare("INSERT INTO products (name, description, price, type) VALUES (?, ?, ?, ?)");
-        $stmt->bind_param("ssis", $name, $desc, $price, $type);
+        $stmt = $db->prepare("INSERT INTO products (name, description, price, type, available_sizes) VALUES (?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssiss", $name, $desc, $price, $type, $available_sizes);
         $stmt->execute();
         $product_id = $db->insert_id;
         $_SESSION['swal'] = ['type' => 'success', 'title' => 'Berhasil!', 'text' => 'Produk baru masuk ke katalog.'];
@@ -170,7 +171,7 @@ while($row = $reg_products_res->fetch_assoc()) {
                         <tr class="border-b border-gray-100 text-xs text-gray-400 font-semibold uppercase tracking-wider">
                             <th class="pb-4 px-6 w-48">Galeri Foto</th>
                             <th class="pb-4 px-4">Nama Produk</th>
-                            <th class="pb-4 px-4">Tipe</th>
+                            <th class="pb-4 px-4">Tipe & Size</th>
                             <th class="pb-4 px-4">Harga Katalog</th>
                             <th class="pb-4 px-4">Sizechart</th>
                             <th class="pb-4 px-6 text-right">Aksi</th>
@@ -205,6 +206,11 @@ while($row = $reg_products_res->fetch_assoc()) {
                                     <span class="px-2.5 py-0.5 rounded-md text-xs font-bold inline-block <?= $p['type'] == 'bundle'?'bg-purple-50 text-purple-600 border border-purple-100':'bg-gray-100 text-gray-600'; ?>">
                                         <?= $p['type']; ?>
                                     </span>
+                                    <?php if(!empty($p['available_sizes'])): ?>
+                                        <div class="text-[10px] text-gray-400 mt-1 truncate max-w-[100px]" title="<?= htmlspecialchars($p['available_sizes']); ?>">
+                                            Size: <?= htmlspecialchars($p['available_sizes']); ?>
+                                        </div>
+                                    <?php endif; ?>
                                 </td>
                                 <td class="py-4 px-4 font-bold text-gray-950">
                                     Rp<?= number_format($p['price'],0,',','.'); ?>
@@ -294,6 +300,12 @@ while($row = $reg_products_res->fetch_assoc()) {
                 </div>
 
                 <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Pilihan Ukuran Tersedia</label>
+                    <input type="text" name="available_sizes" id="modalAvailableSizes" placeholder="Contoh: S, M, L, XL, XXL (Pisahkan dengan koma)" class="w-full border border-gray-200 px-3 py-2 rounded-xl focus:outline-none focus:border-indigo-500 text-xs font-medium">
+                    <p class="text-[10px] text-gray-400 mt-1 italic">*Kosongkan jika produk tidak memiliki ukuran (All Size).</p>
+                </div>
+
+                <div>
                     <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Upload Sizechart (Gambar Panduan Ukuran)</label>
                     <input type="file" name="sizechart" accept="image/*" class="w-full text-xs text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100 cursor-pointer">
                 </div>
@@ -344,6 +356,7 @@ while($row = $reg_products_res->fetch_assoc()) {
         document.getElementById('modalDescription').value = "";
         document.getElementById('modalPrice').value = "";
         document.getElementById('modalType').value = "reguler";
+        document.getElementById('modalAvailableSizes').value = ""; // Membersihkan form ukuran
         document.getElementById('modalImagesPreview').innerHTML = "";
         document.getElementById('modalImagesPreview').classList.add('hidden');
         
@@ -359,6 +372,7 @@ while($row = $reg_products_res->fetch_assoc()) {
         document.getElementById('modalDescription').value = productData.description;
         document.getElementById('modalPrice').value = productData.price;
         document.getElementById('modalType').value = productData.type;
+        document.getElementById('modalAvailableSizes').value = productData.available_sizes || ""; // Memuat data ukuran
 
         // Render Multi-Preview Foto di dalam Modal Form saat Edit
         const previewContainer = document.getElementById('modalImagesPreview');

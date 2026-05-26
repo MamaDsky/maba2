@@ -113,7 +113,8 @@ $all_products = $db->query($query);
                             <span class="text-gray-950 font-black text-xs md:text-sm">Rp<?= number_format($row['price'], 0, ',', '.'); ?></span>
                             <div class="flex gap-1 w-full sm:w-auto justify-end">
                                 <a href="detail.php?id=<?= $row['id']; ?>" class="w-7 h-7 md:w-8 md:h-8 rounded-lg border border-gray-200 text-gray-500 hover:text-gray-900 hover:bg-gray-50 flex items-center justify-center transition text-[10px] md:text-xs shrink-0" title="Detail"><i class="fa-solid fa-eye"></i></a>
-                                <button onclick="addToCart(<?= $row['id']; ?>)" class="flex-1 sm:flex-none bg-gray-950 hover:bg-gray-800 text-white text-[10px] md:text-xs px-2.5 py-1 md:py-1.5 rounded-lg font-bold transition cursor-pointer flex items-center justify-center gap-1">
+                                
+                                <button onclick="handleAddToCart(<?= $row['id']; ?>, '<?= htmlspecialchars($row['available_sizes'] ?? '', ENT_QUOTES); ?>')" class="flex-1 sm:flex-none bg-gray-950 hover:bg-gray-800 text-white text-[10px] md:text-xs px-2.5 py-1 md:py-1.5 rounded-lg font-bold transition cursor-pointer flex items-center justify-center gap-1">
                                     <i class="fa-solid fa-plus text-[9px]"></i> <span>Bag</span>
                                 </button>
                             </div>
@@ -177,7 +178,7 @@ $all_products = $db->query($query);
                 <span id="drawer-total" class="font-black text-base">Rp0</span>
             </div>
             <div class="grid grid-cols-1 gap-2">
-                <a href="checkout.php" class="bg-gray-950 hover:bg-gray-900 text-center font-bold text-xs py-3.5 rounded-xl transition tracking-wide block">Lanjutkan ke Formulir Order <i class="fa-solid fa-arrow-right text-[10px] ml-1.5"></i></a>
+                <a href="checkout.php" class="bg-gray-950 hover:bg-gray-900 text-center text-white font-bold text-xs py-3.5 rounded-xl transition tracking-wide block">Lanjutkan ke Formulir Order <i class="fa-solid fa-arrow-right text-[10px] ml-1.5"></i></a>
                 <button onclick="toggleCartDrawer()" class="text-center text-xs text-gray-400 hover:text-gray-900 font-bold transition py-1 cursor-pointer">Kembali Belanja</button>
             </div>
         </div>
@@ -217,6 +218,7 @@ $all_products = $db->query($query);
                 if (data.status === 'success' && data.items.length > 0) {
                     let html = '';
                     data.items.forEach(item => {
+                        // PERBAIKAN: Gunakan item.cart_key untuk menghapus item
                         html += `
                         <div class="flex items-center gap-4 bg-white border border-gray-100 p-2.5 rounded-xl shadow-2xs">
                             <img src="uploads/${item.image || 'placeholder.jpg'}" class="w-14 h-14 object-cover rounded-lg bg-gray-50 border border-gray-100" onerror="this.src='uploads/placeholder.jpg'">
@@ -224,7 +226,7 @@ $all_products = $db->query($query);
                                 <h4 class="font-bold text-gray-950 text-xs truncate">${item.name}</h4>
                                 <p class="text-[11px] text-gray-400 font-medium mt-0.5">${item.qty}x — Rp${parseInt(item.price).toLocaleString('id-ID')}</p>
                             </div>
-                            <button onclick="updateDrawerQty(${item.id}, 'remove')" class="w-6 h-6 rounded-md border border-gray-100 text-gray-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition text-[10px] cursor-pointer">
+                            <button onclick="updateDrawerQty('${item.cart_key}', 'remove')" class="w-6 h-6 rounded-md border border-gray-100 text-gray-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition text-[10px] cursor-pointer">
                                 <i class="fa-solid fa-trash-can"></i>
                             </button>
                         </div>`;
@@ -249,10 +251,51 @@ $all_products = $db->query($query);
         .catch(error => console.error("Fetch error:", error));
     }
 
-    function addToCart(id) {
+    // FITUR BARU: Cek ukuran sebelum masuk keranjang
+    function handleAddToCart(id, sizesStr) {
+        if (sizesStr && sizesStr.trim() !== '') {
+            // Jika ada varian ukuran, pecah menjadi array dan buat opsi untuk SweetAlert2
+            const sizesArray = sizesStr.split(',').map(s => s.trim()).filter(s => s);
+            let inputOptions = {};
+            sizesArray.forEach(s => {
+                inputOptions[s] = s;
+            });
+
+            Swal.fire({
+                title: 'Pilih Ukuran Atribut',
+                input: 'radio',
+                inputOptions: inputOptions,
+                inputValidator: (value) => {
+                    if (!value) {
+                        return 'Kamu wajib memilih salah satu ukuran!'
+                    }
+                },
+                showCancelButton: true,
+                confirmButtonText: 'Tambah ke Tas',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#4f46e5',
+                cancelButtonColor: '#e5e7eb',
+                customClass: {
+                    title: 'text-sm font-black text-gray-900',
+                    cancelButton: 'text-gray-900'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    executeAddToCart(id, result.value);
+                }
+            });
+        } else {
+            // Jika tidak ada varian ukuran (All Size), langsung eksekusi
+            executeAddToCart(id, '');
+        }
+    }
+
+    // Fungsi utama untuk memproses ke backend
+    function executeAddToCart(id, selectedSize) {
         let formData = new FormData();
         formData.append('action', 'add');
         formData.append('product_id', id);
+        formData.append('size', selectedSize);
 
         fetch('cart_action.php', { method: 'POST', body: formData })
         .then(res => res.json())
@@ -265,10 +308,11 @@ $all_products = $db->query($query);
         });
     }
 
-    function updateDrawerQty(id, actionType) {
+    // PERBAIKAN: Menghapus item berdasarkan cartKey (bukan cuma ID)
+    function updateDrawerQty(cartKey, actionType) {
         let formData = new FormData();
         formData.append('action', actionType);
-        formData.append('product_id', id);
+        formData.append('cart_key', cartKey);
 
         fetch('cart_action.php', { method: 'POST', body: formData })
         .then(res => res.json())

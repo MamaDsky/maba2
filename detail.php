@@ -83,7 +83,7 @@ if ($product['type'] == 'bundle') {
                 <div class="grid grid-cols-3 gap-2 mt-6 pt-6 border-t border-gray-200/60 text-center">
                     <div class="p-2 bg-white rounded-xl border border-gray-100 shadow-3xs">
                         <i class="fa-solid fa-shirt text-indigo-600 text-xs mb-1 block"></i>
-                        <span class="text-[9px] font-black text-gray-900 block uppercase">Bahan Premium</span>
+                        <span class="text-[9px] font-black text-gray-990 block uppercase">Bahan Premium</span>
                         <span class="text-[8px] text-gray-400 font-medium block">Standard Resmi</span>
                     </div>
                     <div class="p-2 bg-white rounded-xl border border-gray-100 shadow-3xs">
@@ -108,6 +108,24 @@ if ($product['type'] == 'bundle') {
                         <h1 class="text-xl md:text-2xl font-black text-gray-950 mt-3 tracking-tight leading-tight"><?= htmlspecialchars($product['name']); ?></h1>
                         <p class="text-xl font-black text-indigo-600 mt-2 tracking-tight">Rp<?= number_format($product['price'], 0, ',', '.'); ?></p>
                     </div>
+
+                    <?php if(!empty($product['available_sizes'])): 
+                        $sizes = array_map('trim', explode(',', $product['available_sizes']));
+                    ?>
+                    <div class="space-y-2.5">
+                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Pilih Ukuran Tersedia:</span>
+                        <div class="flex flex-wrap gap-2">
+                            <?php foreach($sizes as $sz): if($sz === '') continue; ?>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="product_size" value="<?= htmlspecialchars($sz); ?>" class="sr-only peer">
+                                    <span class="px-3.5 py-2 text-xs font-bold rounded-xl border border-gray-200 bg-white text-gray-700 inline-block peer-checked:bg-indigo-600 peer-checked:text-white peer-checked:border-indigo-600 hover:bg-gray-50 transition-all shadow-3xs">
+                                        <?= htmlspecialchars($sz); ?>
+                                    </span>
+                                </label>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
 
                     <div class="bg-white border border-gray-200 p-4 rounded-xl flex items-center justify-between gap-4 shadow-3xs">
                         <div class="min-w-0">
@@ -204,14 +222,13 @@ if ($product['type'] == 'bundle') {
                 <span id="drawer-total" class="font-black text-base">Rp0</span>
             </div>
             <div class="grid grid-cols-1 gap-2">
-                <a href="checkout.php" class="bg-gray-950 hover:bg-gray-800 text-center font-bold text-xs py-3.5 rounded-xl transition tracking-wide block">Lanjutkan ke Formulir Order <i class="fa-solid fa-arrow-right text-[10px] ml-1.5"></i></a>
+                <a href="checkout.php" class="bg-gray-950 hover:bg-gray-800 text-center text-white font-bold text-xs py-3.5 rounded-xl transition tracking-wide block">Lanjutkan ke Formulir Order <i class="fa-solid fa-arrow-right text-[10px] ml-1.5"></i></a>
                 <button onclick="toggleCartDrawer()" class="text-center text-xs text-gray-400 hover:text-gray-900 font-bold transition py-1 cursor-pointer">Kembali Belanja</button>
             </div>
         </div>
     </div>
 
     <script>
-    // FIX: Element target untuk disinkronkan oleh fungsi pembuka drawer
     window.cartCounterElementId = 'cart-counter'; 
 
     function showSizechart(url) {
@@ -266,7 +283,7 @@ if ($product['type'] == 'bundle') {
                                 <h4 class="font-bold text-gray-950 text-xs truncate">${item.name}</h4>
                                 <p class="text-[11px] text-gray-400 font-medium mt-0.5">${item.qty}x — Rp${parseInt(item.price).toLocaleString('id-ID')}</p>
                             </div>
-                            <button onclick="updateDrawerQty(${item.id}, 'remove')" class="w-6 h-6 rounded-md border border-gray-100 text-gray-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition text-[10px] cursor-pointer">
+                            <button onclick="updateDrawerQty('${item.cart_key}', 'remove')" class="w-6 h-6 rounded-md border border-gray-100 text-gray-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition text-[10px] cursor-pointer">
                                 <i class="fa-solid fa-trash-can"></i>
                             </button>
                         </div>`;
@@ -287,25 +304,42 @@ if ($product['type'] == 'bundle') {
     }
 
     function addToCart(id) {
+        let selectedSize = '';
+        const sizeRadio = document.querySelector('input[name="product_size"]:checked');
+        
+        // Validasi: Jika produk memiliki varian ukuran, wajib dipilih terlebih dahulu
+        if (document.querySelector('input[name="product_size"]')) {
+            if (!sizeRadio) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Pilih Ukuran!',
+                    text: 'Silakan tentukan ukuran atribut kamu terlebih dahulu.',
+                    confirmButtonColor: '#4f46e5'
+                });
+                return;
+            }
+            selectedSize = sizeRadio.value;
+        }
+
         let formData = new FormData();
         formData.append('action', 'add');
         formData.append('product_id', id);
+        formData.append('size', selectedSize);
 
         fetch('cart_action.php', { method: 'POST', body: formData })
         .then(res => res.json())
         .then(data => {
             if(data.status === 'success') {
-                // Perbarui semua counter secara aman di dom
                 document.querySelectorAll('.nav-cart-counter').forEach(el => el.innerText = data.total_items);
-                toggleCartDrawer(); // Meluncurkan pop-up drawer samping secara instan
+                toggleCartDrawer(); 
             }
         }).catch(err => console.error("Error add to bag:", err));
     }
 
-    function updateDrawerQty(id, actionType) {
+    function updateDrawerQty(cartKey, actionType) {
         let formData = new FormData();
         formData.append('action', actionType);
-        formData.append('product_id', id);
+        formData.append('cart_key', cartKey);
 
         fetch('cart_action.php', { method: 'POST', body: formData })
         .then(res => res.json())

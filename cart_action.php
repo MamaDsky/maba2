@@ -22,9 +22,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     
     if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
         $grand_total = 0;
-        foreach ($_SESSION['cart'] as $p_id => $qty) {
+        foreach ($_SESSION['cart'] as $cart_key => $qty) {
             $qty = intval($qty);
             if ($qty <= 0) continue;
+            
+            // Ekstrak ID produk dan Ukuran dari kunci keranjang (format: id_size)
+            $parts = explode('_', $cart_key);
+            $p_id = intval($parts[0]);
+            $size = isset($parts[1]) && $parts[1] !== '' ? $parts[1] : null;
             
             $stmt = $db->prepare("SELECT p.name, p.price, (SELECT image_path FROM product_images WHERE product_id = p.id LIMIT 1) as img FROM products p WHERE p.id = ?");
             $stmt->bind_param("i", $p_id);
@@ -34,9 +39,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
             if ($res) {
                 $subtotal = intval($res['price']) * $qty;
                 $grand_total += $subtotal;
+                
+                // Tambahkan label ukuran di nama produk yang tampil di laci keranjang
+                $display_name = htmlspecialchars($res['name']);
+                if ($size) {
+                    $display_name .= " (Ukuran: " . htmlspecialchars($size) . ")";
+                }
+
                 $response['items'][] = [
+                    'cart_key' => $cart_key, // Key ini nanti dipakai untuk tombol Hapus item
                     'id' => intval($p_id),
-                    'name' => $res['name'],
+                    'name' => $display_name,
                     'price' => intval($res['price']),
                     'qty' => $qty,
                     'image' => $res['img']
@@ -65,19 +78,34 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
 
     if ($action == 'add') {
         $product_id = intval($_POST['product_id']);
-        if (isset($_SESSION['cart'][$product_id])) {
-            $_SESSION['cart'][$product_id] += 1;
+        $size = isset($_POST['size']) ? trim($_POST['size']) : '';
+        
+        // Buat kunci unik gabungan ID dan Size (contoh: '12_XL' atau '12')
+        $cart_key = $product_id . ($size !== '' ? '_' . $size : '');
+
+        if (isset($_SESSION['cart'][$cart_key])) {
+            $_SESSION['cart'][$cart_key] += 1;
         } else {
-            $_SESSION['cart'][$product_id] = 1;
+            $_SESSION['cart'][$cart_key] = 1;
         }
+        
         echo json_encode(['status' => 'success', 'total_items' => array_sum($_SESSION['cart'])]);
         exit;
     }
 
     if ($action == 'remove') {
-        $product_id = intval($_POST['product_id']);
-        if (isset($_SESSION['cart'][$product_id])) {
-            unset($_SESSION['cart'][$product_id]);
+        // Hapus berdasarkan kunci unik
+        if (isset($_POST['cart_key'])) {
+            $cart_key = $_POST['cart_key'];
+            if (isset($_SESSION['cart'][$cart_key])) {
+                unset($_SESSION['cart'][$cart_key]);
+            }
+        } else if (isset($_POST['product_id'])) {
+            // Logika lama (fallback) untuk berjaga-jaga jika halaman frontend belum ter-refresh
+            $product_id = intval($_POST['product_id']);
+            if (isset($_SESSION['cart'][$product_id])) {
+                unset($_SESSION['cart'][$product_id]);
+            }
         }
         echo json_encode(['status' => 'success', 'total_items' => array_sum($_SESSION['cart'])]);
         exit;
