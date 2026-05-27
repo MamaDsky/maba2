@@ -46,6 +46,7 @@ $total_res = $db->query("SELECT COUNT(*) as total FROM orders o $where_clause");
 $total_data = $total_res->fetch_assoc()['total'];
 $pages = ceil($total_data / $limit);
 
+// Ubah query menjadi seperti ini
 $orders = $db->query("SELECT o.*, b.batch_name FROM orders o JOIN batches b ON o.batch_id = b.id $where_clause ORDER BY o.id DESC LIMIT $start, $limit");
 $all_batches = $db->query("SELECT id, batch_name FROM batches ORDER BY id DESC");
 ?>
