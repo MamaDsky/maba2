@@ -6,7 +6,6 @@ require_once 'config/database.php';
 $db = (new Database())->getConnection();
 
 // Inisialisasi Variabel Pelacakan
-// Ubah bagian ini di track.php
 $order_code = isset($_GET['order_id']) ? trim(htmlspecialchars($_GET['order_id'])) : (isset($_GET['code']) ? trim(htmlspecialchars($_GET['code'])) : '');
 $order_data = null;
 $order_items = [];
@@ -35,7 +34,7 @@ if (!empty($order_code)) {
     }
 }
 
-// Helper penentu level indeks tracking timeline berdasarkan ENUM databasemu ('Diproses', 'Di-packing', 'Dikirim')
+// Helper penentu level indeks tracking timeline
 $status_steps = ['Diproses' => 1, 'Di-packing' => 2, 'Dikirim' => 3];
 $current_step = ($order_data && isset($status_steps[$order_data['status']])) ? $status_steps[$order_data['status']] : 0;
 ?>
@@ -53,23 +52,24 @@ $current_step = ($order_data && isset($status_steps[$order_data['status']])) ? $
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-[#fafafa] text-gray-900 font-sans antialiased selection:bg-cyan-100 selection:text-cyan-900">
+<body class="bg-[#fafafa] text-gray-900 font-sans antialiased selection:bg-[#dff6f9] selection:text-[#024a54]">
 
-    <nav class="bg-white/70 backdrop-blur-md border-b border-gray-200/60 py-4 px-6 md:px-16 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto flex flex-row justify-between items-center w-full">
+     <nav class="bg-white/80 backdrop-blur-md border-b border-gray-200/60 py-3.5 sm:py-4 px-4 sm:px-8 md:px-16 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex flex-row justify-between items-center w-full gap-2">
             <a href="index.php" class="text-sm font-black tracking-tight flex items-center gap-2 text-gray-950 shrink-0">
-                <div class="w-6 h-6 bg-gray-950 rounded-md flex items-center justify-center text-white text-[10px]">
+                <div class="w-7 h-7 bg-gray-950 rounded-md flex items-center justify-center text-white text-xs shadow-3xs">
                     <i class="fa-solid fa-graduation-cap"></i>
                 </div>
-                <span>Maba<span class="text-[#06b7d2]">Store.</span></span>
+                <span class="hidden sm:block">Maba<span class="text-[#06b7d2]">Store.</span></span>
             </a>
-            <div class="flex items-center gap-6 sm:gap-8 md:gap-10 font-bold text-xs text-gray-400">
-                <a href="index.php" class="hover:text-gray-950 transition-all">Home</a>
-                <a href="products.php" class="hover:text-gray-950 transition-all">Katalog</a>
-                <a href="track.php" class="text-gray-950 border-b-2 border-gray-950 pb-1 font-black transition-all">Lacak Order</a>
+            
+            <div class="flex items-center gap-4 sm:gap-6 md:gap-10 font-bold text-[11px] sm:text-xs text-gray-400">
+                <a href="index.php" class="hover:text-[#06b7d2] hover:scale-105 transition-all">Home</a>
+                <a href="products.php" class="hover:text-[#06b7d2] hover:scale-105 transition-all">Katalog</a>
+                <a href="track.php" class="text-gray-950 border-b-2 border-gray-950 pb-1 font-black transition-all">Lacak</a>
                 
-                <button onclick="toggleCartDrawer()" class="hover:text-gray-950 transition-all cursor-pointer relative pt-0.5 ml-2 shrink-0">
-                    <i class="fa-solid fa-bag-shopping text-sm text-gray-800"></i>
+                <button onclick="toggleCartDrawer()" class="hover:text-[#06b7d2] transition-all cursor-pointer relative ml-1 sm:ml-2 shrink-0">
+                    <i class="fa-solid fa-bag-shopping text-sm sm:text-base text-gray-800"></i>
                     <span class="nav-cart-counter absolute -top-1.5 -right-2 bg-[#06b7d2] text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center scale-80"><?= isset($_SESSION['cart']) ? array_sum($_SESSION['cart']) : 0; ?></span>
                 </button>
             </div>
@@ -106,7 +106,7 @@ $current_step = ($order_data && isset($status_steps[$order_data['status']])) ? $
                             <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest">Garis Waktu Distribusi</h2>
                             <p class="text-sm font-black text-gray-950 mt-0.5">Timeline Log Produksi Antrean</p>
                         </div>
-                        <span class="text-[10px] font-black px-2.5 py-1 rounded-md bg-cyan-50 text-[#06b7d2] border border-[#06b7d2]/20 uppercase tracking-wider self-start sm:self-auto shadow-3xs">
+                        <span class="text-[10px] font-black px-2.5 py-1 rounded-md bg-[#f0fbfd] text-[#0594a8] border border-[#06b7d2]/20 uppercase tracking-wider self-start sm:self-auto shadow-3xs">
                             <i class="fa-solid fa-clock-rotate-left mr-1"></i> Status: <?= htmlspecialchars($order_data['status']); ?>
                         </span>
                     </div>
@@ -201,9 +201,9 @@ $current_step = ($order_data && isset($status_steps[$order_data['status']])) ? $
                     </div>
                 </div>
 
-                <div class="bg-cyan-50/40 border border-[#06b7d2]/30 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div class="bg-[#f0fbfd] border border-[#06b7d2]/30 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div class="flex items-start gap-3">
-                        <div class="w-8 h-8 rounded-lg bg-cyan-100 flex items-center justify-center text-[#06b7d2] text-xs shrink-0"><i class="fa-solid fa-headset"></i></div>
+                        <div class="w-8 h-8 rounded-lg bg-[#dff6f9] flex items-center justify-center text-[#06b7d2] text-xs shrink-0"><i class="fa-solid fa-headset"></i></div>
                         <div>
                             <h4 class="text-xs font-black text-gray-900 uppercase tracking-wide">Butuh Bantuan Logistik?</h4>
                             <p class="text-[11px] text-gray-400 font-medium mt-0.5 leading-relaxed">Jika ada kendala pelacakan atau ingin merubah data ukuran kemeja kain, hubungi admin penanggung jawab gelombang.</p>
@@ -249,18 +249,17 @@ $current_step = ($order_data && isset($status_steps[$order_data['status']])) ? $
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-    // Cek apakah URL mengandung parameter success=1
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('success') && urlParams.get('success') == '1') {
-        Swal.fire({
-            icon: 'success',
-            title: 'Pembayaran Diterima!',
-            text: 'Bukti pembayaran Anda sedang diverifikasi oleh admin. Terima kasih!',
-            confirmButtonColor: '#06b7d2'
-        });
-    }
-</script>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('success') && urlParams.get('success') == '1') {
+            Swal.fire({
+                icon: 'success',
+                title: 'Pembayaran Diterima!',
+                text: 'Bukti pembayaran Anda sedang diverifikasi oleh admin. Terima kasih!',
+                confirmButtonColor: '#06b7d2'
+            });
+        }
+    </script>
 
     <script>
     function toggleCartDrawer() {
@@ -279,12 +278,16 @@ $current_step = ($order_data && isset($status_steps[$order_data['status']])) ? $
         }
     }
 
+    // PERBAIKAN SCRIPT KERANJANG AGAR SINKRON DENGAN PRODUK & INDEX (Menambahkan + / - QTY)
     function fetchCartContents() {
         const container = document.getElementById('drawer-items-container');
         const totalLabel = document.getElementById('drawer-total');
 
         fetch('cart_action.php?action=get_summary')
-        .then(res => res.text())
+        .then(res => {
+            if (!res.ok) throw new Error("Network response error");
+            return res.text();
+        })
         .then(text => {
             try {
                 const data = JSON.parse(text.trim()); 
@@ -292,13 +295,24 @@ $current_step = ($order_data && isset($status_steps[$order_data['status']])) ? $
                     let html = '';
                     data.items.forEach(item => {
                         html += `
-                        <div class="flex items-center gap-4 bg-white border border-gray-150 p-2.5 rounded-xl shadow-2xs">
+                        <div class="flex items-center gap-4 bg-white border border-gray-100 p-2.5 rounded-xl shadow-2xs">
                             <img src="uploads/${item.image || 'placeholder.jpg'}" class="w-14 h-14 object-cover rounded-lg bg-gray-50 border border-gray-100" onerror="this.src='uploads/placeholder.jpg'">
                             <div class="flex-1 min-w-0">
                                 <h4 class="font-bold text-gray-950 text-xs truncate">${item.name}</h4>
-                                <p class="text-[11px] text-gray-400 font-medium mt-0.5">${item.qty}x — Rp${parseInt(item.price).toLocaleString('id-ID')}</p>
+                                
+                                <div class="flex items-center gap-3 mt-1.5">
+                                    <div class="flex items-center border border-gray-200 rounded-md bg-gray-50">
+                                        <button onclick="updateDrawerQty('${item.cart_key}', 'decrease')" class="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-950 hover:bg-gray-200 transition cursor-pointer text-[10px] rounded-l-md"><i class="fa-solid fa-minus"></i></button>
+                                        
+                                        <span class="w-6 text-center text-[10px] font-black text-gray-950">${item.qty}</span>
+                                        
+                                        <button onclick="updateDrawerQty('${item.cart_key}', 'increase')" class="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-950 hover:bg-gray-200 transition cursor-pointer text-[10px] rounded-r-md"><i class="fa-solid fa-plus"></i></button>
+                                    </div>
+                                    <span class="text-[10px] text-gray-400 font-medium tracking-wide">@ Rp${parseInt(item.price).toLocaleString('id-ID')}</span>
+                                </div>
+                                
                             </div>
-                            <button onclick="updateDrawerQty(${item.id}, 'remove')" class="w-6 h-6 rounded-md border border-gray-100 text-gray-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition text-[10px] cursor-pointer">
+                            <button onclick="updateDrawerQty('${item.cart_key}', 'remove')" class="w-7 h-7 rounded-lg border border-gray-100 text-gray-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition text-[11px] cursor-pointer shrink-0">
                                 <i class="fa-solid fa-trash-can"></i>
                             </button>
                         </div>`;
@@ -306,19 +320,19 @@ $current_step = ($order_data && isset($status_steps[$order_data['status']])) ? $
                     container.innerHTML = html;
                     totalLabel.innerText = 'Rp ' + parseInt(data.grand_total).toLocaleString('id-ID');
                 } else {
-                    container.innerHTML = `<div class="text-center py-12 text-gray-400 text-xs font-medium"><i class="fa-solid fa-bag-shopping text-2xl mb-2 text-gray-200 block"></i>Keranjang kosong.</div>`;
+                    container.innerHTML = `<div class="text-center py-12 text-gray-400 text-xs font-medium"><i class="fa-solid fa-basket-shopping text-2xl mb-2 text-gray-200 block"></i>Keranjang belanja kosong.</div>`;
                     totalLabel.innerText = 'Rp 0';
                 }
             } catch (err) {
-                container.innerHTML = `<div class="text-center py-12 text-xs text-gray-400 font-medium"><i class="fa-solid fa-triangle-exclamation text-xl mb-2 text-[#06b7d2] block"></i>Gagal memuat item.</div>`;
+                container.innerHTML = `<div class="text-center py-12 text-xs text-gray-400 font-medium"><i class="fa-solid fa-triangle-exclamation text-xl mb-2 text-[#06b7d2] block"></i>Gagal memuat item, coba segarkan halaman.</div>`;
             }
         });
     }
 
-    function updateDrawerQty(id, actionType) {
+    function updateDrawerQty(cartKey, actionType) {
         let formData = new FormData();
         formData.append('action', actionType);
-        formData.append('product_id', id);
+        formData.append('cart_key', cartKey);
 
         fetch('cart_action.php', { method: 'POST', body: formData })
         .then(res => res.json())

@@ -299,7 +299,7 @@ while($row = $reg_products_res->fetch_assoc()) {
                     </div>
                 </div>
 
-                <div>
+                <div id="size_input_wrapper">
                     <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Pilihan Ukuran Tersedia</label>
                     <input type="text" name="available_sizes" id="modalAvailableSizes" placeholder="Contoh: S, M, L, XL, XXL (Pisahkan dengan koma)" class="w-full border border-gray-200 px-3 py-2 rounded-xl focus:outline-none focus:border-indigo-500 text-xs font-medium">
                     <p class="text-[10px] text-gray-400 mt-1 italic">*Kosongkan jika produk tidak memiliki ukuran (All Size).</p>
@@ -346,7 +346,12 @@ while($row = $reg_products_res->fetch_assoc()) {
 
     function toggleBundleBox() {
         let type = document.getElementById('modalType').value;
+        
+        // Memunculkan checklist komponen jika tipe = bundle
         document.getElementById('bundle_checklist_box').classList.toggle('hidden', type !== 'bundle');
+        
+        // MENYEMBUNYIKAN input ukuran manual jika tipe = bundle
+        document.getElementById('size_input_wrapper').classList.toggle('hidden', type === 'bundle');
     }
 
     function openAddModal() {

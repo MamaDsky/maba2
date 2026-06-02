@@ -116,4 +116,35 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
         header("Location: checkout.php");
         exit;
     }
+
+    // --- TAMBAHAN BARU: LOGIKA TAMBAH/KURANG QTY ---
+    if ($action == 'decrease') {
+        if (isset($_POST['cart_key'])) {
+            $cart_key = $_POST['cart_key'];
+            if (isset($_SESSION['cart'][$cart_key])) {
+                $_SESSION['cart'][$cart_key] -= 1;
+                
+                // Jika qty menjadi 0, hapus otomatis dari keranjang
+                if ($_SESSION['cart'][$cart_key] <= 0) {
+                    unset($_SESSION['cart'][$cart_key]);
+                }
+            }
+        }
+        $total_items = empty($_SESSION['cart']) ? 0 : array_sum($_SESSION['cart']);
+        echo json_encode(['status' => 'success', 'total_items' => $total_items]);
+        exit;
+    }
+
+    if ($action == 'increase') {
+        if (isset($_POST['cart_key'])) {
+            $cart_key = $_POST['cart_key'];
+            if (isset($_SESSION['cart'][$cart_key])) {
+                $_SESSION['cart'][$cart_key] += 1;
+            }
+        }
+        $total_items = empty($_SESSION['cart']) ? 0 : array_sum($_SESSION['cart']);
+        echo json_encode(['status' => 'success', 'total_items' => $total_items]);
+        exit;
+    }
+    // --- AKHIR TAMBAHAN BARU ---
 }

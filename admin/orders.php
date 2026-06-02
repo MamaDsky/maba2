@@ -112,7 +112,7 @@ $all_batches = $db->query("SELECT id, batch_name FROM batches ORDER BY id DESC")
                             <th class="pb-4 px-4">Item Belanjaan</th>
                             <th class="pb-4 px-4">Status</th>
                             <th class="pb-4 px-4">No. Resi</th>
-                            <th class="pb-4 px-4">Total Pembayaran</th>
+                            <th class="pb-4 px-4">Bukti Bayar</th> <th class="pb-4 px-4">Total Pembayaran</th>
                             <th class="pb-4 px-6 text-right">Aksi</th>
                         </tr>
                     </thead>
@@ -125,20 +125,30 @@ $all_batches = $db->query("SELECT id, batch_name FROM batches ORDER BY id DESC")
                                     <span class="text-gray-900 font-semibold block mt-0.5"><?= htmlspecialchars($ord['customer_name']); ?></span>
                                     <span class="text-gray-400 text-xs block mt-0.5"><?= htmlspecialchars($ord['customer_phone']); ?></span>
                                 </td>
-                                <td class="py-4 px-4">
-                                    <div class="bg-gray-50 p-2.5 rounded-xl border border-gray-200/40 max-w-[260px] space-y-1.5">
-                                        <?php 
-                                        $current_order_id = $ord['id'];
-                                        $items_q = $db->query("SELECT oi.quantity, p.name FROM order_items oi JOIN products p ON oi.product_id = p.id WHERE oi.order_id = $current_order_id");
-                                        while($item = $items_q->fetch_assoc()):
-                                        ?>
-                                            <div class="text-xs font-medium text-gray-700 flex items-start gap-1">
-                                                <span class="bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded-md font-bold text-[10px] mt-0.5"><?= $item['quantity']; ?>x</span> 
-                                                <span class="truncate" title="<?= htmlspecialchars($item['name']); ?>"><?= htmlspecialchars($item['name']); ?></span>
-                                            </div>
-                                        <?php endwhile; ?>
-                                    </div>
-                                </td>
+                               <td class="py-4 px-4">
+    <div class="bg-gray-50 p-2.5 rounded-xl border border-gray-200/40 max-w-[260px] space-y-1.5">
+        <?php 
+        $current_order_id = $ord['id'];
+        // 1. Tambahkan oi.selected_size pada query SELECT
+        $items_q = $db->query("SELECT oi.quantity, oi.selected_size, p.name FROM order_items oi JOIN products p ON oi.product_id = p.id WHERE oi.order_id = $current_order_id");
+        while($item = $items_q->fetch_assoc()):
+        ?>
+            <div class="text-xs font-medium text-gray-700 flex items-start gap-1">
+                <span class="bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded-md font-bold text-[10px] mt-0.5 shrink-0"><?= $item['quantity']; ?>x</span> 
+                
+                <span class="truncate" title="<?= htmlspecialchars($item['name']); ?>">
+                    <?= htmlspecialchars($item['name']); ?>
+                    
+                    <?php if(!empty($item['selected_size'])): ?>
+                        <span class="inline-block bg-gray-200/60 text-gray-500 border border-gray-200 px-1.5 rounded text-[9px] ml-1 font-bold tracking-wide">
+                            <?= htmlspecialchars($item['selected_size']); ?>
+                        </span>
+                    <?php endif; ?>
+                </span>
+            </div>
+        <?php endwhile; ?>
+    </div>
+</td>
                                 <td class="py-4 px-4">
                                     <?php
                                     $status_class = 'bg-amber-50 text-amber-700 border-amber-200/60';
@@ -152,6 +162,25 @@ $all_batches = $db->query("SELECT id, batch_name FROM batches ORDER BY id DESC")
                                 <td class="py-4 px-4 font-mono text-xs text-gray-500">
                                     <?= !empty($ord['receipt_number']) ? '<span class="bg-gray-100 text-gray-800 px-2 py-1 rounded font-medium">'.$ord['receipt_number'].'</span>' : '<span class="text-gray-300 italic">Belum Ada</span>'; ?>
                                 </td>
+                                <td class="py-4 px-4 font-mono text-xs text-gray-500">
+    <?= !empty($ord['receipt_number']) ? '<span class="bg-gray-100 text-gray-800 px-2 py-1 rounded font-medium">'.$ord['receipt_number'].'</span>' : '<span class="text-gray-300 italic">Belum Ada</span>'; ?>
+</td>
+
+<td class="py-4 px-4">
+    <?php if(!empty($ord['payment_proof'])): ?>
+        <a href="../uploads/<?= htmlspecialchars($ord['payment_proof']); ?>" target="_blank" class="inline-flex items-center gap-1.5 bg-gray-50 border border-gray-200 text-gray-700 px-2.5 py-1 rounded-lg text-xs font-bold hover:bg-gray-100 hover:text-indigo-600 transition-all shadow-3xs cursor-pointer">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+            Cek Bukti
+        </a>
+    <?php else: ?>
+        <span class="inline-flex items-center gap-1 text-gray-300 italic text-[10px] font-medium">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg> Menunggu
+        </span>
+    <?php endif; ?>
+</td>
+<td class="py-4 px-4 font-bold text-gray-900 text-base">
+    Rp<?= number_format($ord['total_price'],0,',','.'); ?>
+</td>
                                 <td class="py-4 px-4 font-bold text-gray-900 text-base">
                                     Rp<?= number_format($ord['total_price'],0,',','.'); ?>
                                 </td>
@@ -163,7 +192,7 @@ $all_batches = $db->query("SELECT id, batch_name FROM batches ORDER BY id DESC")
                             <?php endwhile; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="6" class="py-12 text-center text-gray-400 italic bg-gray-50/30 rounded-xl">Belum ada data pesanan masuk untuk filter ini.</td>
+                                <td colspan="7" class="py-12 text-center text-gray-400 italic bg-gray-50/30 rounded-xl">Belum ada data pesanan masuk untuk filter ini.</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>

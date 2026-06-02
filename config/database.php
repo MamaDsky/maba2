@@ -1,9 +1,9 @@
 <?php
 class Database {
     private $host = "localhost";
-    private $username = "root";
-    private $password = "";
-    private $db_name = "db_mabastore";
+    private $username = "mabw6842_maba";
+    private $password = "K@8ksMntySxDvWD";
+    private $db_name = "mabw6842_mabastore";
     public $conn;
 
     public function getConnection() {

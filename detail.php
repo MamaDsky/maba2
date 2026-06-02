@@ -21,9 +21,9 @@ $images = $db->query("SELECT image_path FROM product_images WHERE product_id = $
 // Ambil Isi Komponen Bundle jika produk bertipe paket kombinasi
 $bundle_items = [];
 if ($product['type'] == 'bundle') {
-    $bi_res = $db->query("SELECT p.name FROM bundle_relations br JOIN products p ON br.regular_product_id = p.id WHERE br.bundle_product_id = $id");
+    $bi_res = $db->query("SELECT p.id, p.name, p.available_sizes FROM bundle_relations br JOIN products p ON br.regular_product_id = p.id WHERE br.bundle_product_id = $id");
     while($row = $bi_res->fetch_assoc()) { 
-        $bundle_items[] = $row['name']; 
+        $bundle_items[] = $row; 
     }
 }
 ?>
@@ -42,23 +42,23 @@ if ($product['type'] == 'bundle') {
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-[#fafafa] text-gray-900 font-sans antialiased selection:bg-indigo-100 selection:text-indigo-900 pb-24 md:pb-0">
+<body class="bg-[#fafafa] text-gray-900 font-sans antialiased selection:bg-[#dff6f9] selection:text-[#024a54] pb-24 md:pb-0">
 
     <nav class="bg-white/70 backdrop-blur-md border-b border-gray-200/60 py-4 px-4 sm:px-8 md:px-16 flex justify-between items-center sticky top-0 z-50">
         <a href="index.php" class="text-sm font-black tracking-tight flex items-center gap-2 text-gray-950">
             <div class="w-6 h-6 bg-gray-950 rounded-md flex items-center justify-center text-white text-[10px]">
                 <i class="fa-solid fa-graduation-cap"></i>
             </div>
-            <span>Maba<span class="text-indigo-600">Store.</span></span>
+            <span>Maba<span class="text-[#06b7d2]">Store.</span></span>
         </a>
         <div class="flex space-x-6 sm:space-x-8 font-bold text-xs text-gray-400 items-center">
-            <a href="index.php" class="hover:text-gray-900 transition">Home</a>
-            <a href="products.php" class="hover:text-gray-900 transition">Katalog</a>
-            <a href="track.php" class="hover:text-gray-900 transition">Lacak</a>
+            <a href="index.php" class="hover:text-[#06b7d2] transition">Home</a>
+            <a href="products.php" class="hover:text-[#06b7d2] transition">Katalog</a>
+            <a href="track.php" class="hover:text-[#06b7d2] transition">Lacak</a>
             
-            <button onclick="toggleCartDrawer()" class="hover:text-gray-900 transition cursor-pointer relative pt-0.5">
+            <button onclick="toggleCartDrawer()" class="hover:text-[#06b7d2] transition cursor-pointer relative pt-0.5">
                 <i class="fa-solid fa-bag-shopping text-sm text-gray-800"></i>
-                <span class="nav-cart-counter absolute -top-1.5 -right-2 bg-indigo-600 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center scale-80"><?= isset($_SESSION['cart']) ? array_sum($_SESSION['cart']) : 0; ?></span>
+                <span class="nav-cart-counter absolute -top-1.5 -right-2 bg-[#06b7d2] text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center scale-80"><?= isset($_SESSION['cart']) ? array_sum($_SESSION['cart']) : 0; ?></span>
             </button>
         </div>
     </nav>
@@ -67,13 +67,13 @@ if ($product['type'] == 'bundle') {
         <div class="bg-white rounded-2xl border border-gray-200 shadow-2xs overflow-hidden grid grid-cols-1 lg:grid-cols-12 gap-0 md:gap-4">
             
             <div class="lg:col-span-6 p-4 md:p-6 bg-gray-50/50 flex flex-col justify-center border-b lg:border-b-0 lg:border-r border-gray-200/80">
-                <div class="flex space-x-3 overflow-x-auto snap-x snap-mandatory pb-2 no-scrollbar scroll-smooth">
+               <div class="flex space-x-3 overflow-x-auto snap-x snap-mandatory pb-2 no-scrollbar scroll-smooth">
                     <?php if($images->num_rows > 0): ?>
                         <?php while($img = $images->fetch_assoc()): ?>
-                            <img src="uploads/<?= $img['image_path']; ?>" class="w-full h-72 sm:h-96 object-cover rounded-xl snap-center shrink-0 shadow-3xs border border-gray-200/40 bg-white" onerror="this.src='uploads/placeholder.jpg'">
+                            <img src="uploads/<?= $img['image_path']; ?>" class="w-full aspect-[4/5] object-cover rounded-xl snap-center shrink-0 shadow-3xs border border-gray-200/40 bg-white" onerror="this.src='uploads/placeholder.jpg'">
                         <?php endwhile; ?>
                     <?php else: ?>
-                        <img src="uploads/placeholder.jpg" class="w-full h-72 sm:h-96 object-cover rounded-xl snap-center shrink-0 border border-gray-200/40 bg-white">
+                        <img src="uploads/placeholder.jpg" class="w-full aspect-[4/5] object-cover rounded-xl snap-center shrink-0 border border-gray-200/40 bg-white">
                     <?php endif; ?>
                 </div>
                 <p class="text-center text-[10px] text-gray-400 font-bold tracking-wide mt-2 uppercase">
@@ -82,7 +82,7 @@ if ($product['type'] == 'bundle') {
 
                 <div class="grid grid-cols-3 gap-2 mt-6 pt-6 border-t border-gray-200/60 text-center">
                     <div class="p-2 bg-white rounded-xl border border-gray-100 shadow-3xs">
-                        <i class="fa-solid fa-shirt text-indigo-600 text-xs mb-1 block"></i>
+                        <i class="fa-solid fa-shirt text-[#06b7d2] text-xs mb-1 block"></i>
                         <span class="text-[9px] font-black text-gray-990 block uppercase">Bahan Premium</span>
                         <span class="text-[8px] text-gray-400 font-medium block">Standard Resmi</span>
                     </div>
@@ -106,10 +106,10 @@ if ($product['type'] == 'bundle') {
                             <i class="fa-solid fa-tag text-[8px] mr-1"></i><?= $product['type']; ?>
                         </span>
                         <h1 class="text-xl md:text-2xl font-black text-gray-950 mt-3 tracking-tight leading-tight"><?= htmlspecialchars($product['name']); ?></h1>
-                        <p class="text-xl font-black text-indigo-600 mt-2 tracking-tight">Rp<?= number_format($product['price'], 0, ',', '.'); ?></p>
+                        <p class="text-xl font-black text-[#06b7d2] mt-2 tracking-tight">Rp<?= number_format($product['price'], 0, ',', '.'); ?></p>
                     </div>
 
-                    <?php if(!empty($product['available_sizes'])): 
+                    <?php if($product['type'] == 'reguler' && !empty($product['available_sizes'])): 
                         $sizes = array_map('trim', explode(',', $product['available_sizes']));
                     ?>
                     <div class="space-y-2.5">
@@ -118,7 +118,7 @@ if ($product['type'] == 'bundle') {
                             <?php foreach($sizes as $sz): if($sz === '') continue; ?>
                                 <label class="cursor-pointer">
                                     <input type="radio" name="product_size" value="<?= htmlspecialchars($sz); ?>" class="sr-only peer">
-                                    <span class="px-3.5 py-2 text-xs font-bold rounded-xl border border-gray-200 bg-white text-gray-700 inline-block peer-checked:bg-indigo-600 peer-checked:text-white peer-checked:border-indigo-600 hover:bg-gray-50 transition-all shadow-3xs">
+                                    <span class="px-3.5 py-2 text-xs font-bold rounded-xl border border-gray-200 bg-white text-gray-700 inline-block peer-checked:bg-[#06b7d2] peer-checked:text-white peer-checked:border-[#06b7d2] hover:bg-gray-50 transition-all shadow-3xs">
                                         <?= htmlspecialchars($sz); ?>
                                     </span>
                                 </label>
@@ -127,6 +127,33 @@ if ($product['type'] == 'bundle') {
                     </div>
                     <?php endif; ?>
 
+                    <?php if($product['type'] == 'bundle' && !empty($bundle_items)): ?>
+                    <div class="space-y-4 bg-gray-50 p-4 rounded-xl border border-gray-200/60">
+                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Pilih Ukuran Isi Paket:</span>
+                        <?php foreach($bundle_items as $b_item): 
+                            if(empty($b_item['available_sizes'])) continue; 
+                            $b_sizes = array_map('trim', explode(',', $b_item['available_sizes']));
+                        ?>
+                            <div class="space-y-2 bundle-size-group" data-item-name="<?= htmlspecialchars($b_item['name']); ?>">
+                                <span class="text-xs font-bold text-gray-900 block"><?= htmlspecialchars($b_item['name']); ?></span>
+                                <div class="flex flex-wrap gap-2">
+                                    <?php foreach($b_sizes as $sz): if($sz === '') continue; ?>
+                                        <label class="cursor-pointer">
+                                            <input type="radio" name="bundle_size_<?= $b_item['id']; ?>" value="<?= htmlspecialchars($sz); ?>" class="sr-only peer bundle-size-radio">
+                                            <span class="px-3 py-1.5 text-[11px] font-bold rounded-lg border border-gray-200 bg-white text-gray-700 inline-block peer-checked:bg-[#06b7d2] peer-checked:text-white peer-checked:border-[#06b7d2] hover:bg-gray-50 transition-all shadow-3xs">
+                                                <?= htmlspecialchars($sz); ?>
+                                            </span>
+                                        </label>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
+
+                    <?php 
+                    if ($product['type'] == 'bundle' || ($product['type'] == 'reguler' && !empty($product['available_sizes']))): 
+                    ?>
                     <div class="bg-white border border-gray-200 p-4 rounded-xl flex items-center justify-between gap-4 shadow-3xs">
                         <div class="min-w-0">
                             <span class="text-[10px] font-black text-gray-950 block uppercase tracking-wider">Panduan Ukuran (Sizechart)</span>
@@ -142,6 +169,7 @@ if ($product['type'] == 'bundle') {
                             </button>
                         <?php endif; ?>
                     </div>
+                    <?php endif; ?>
                     
                     <div class="border-t border-gray-100 pt-5 space-y-5">
                         <div class="text-xs sm:text-sm text-gray-500 font-medium leading-relaxed">
@@ -149,16 +177,16 @@ if ($product['type'] == 'bundle') {
                             <?= nl2br(htmlspecialchars($product['description'])); ?>
                         </div>
 
-                        <?php if(!empty($bundle_items)): ?>
-                        <div class="bg-purple-50/40 p-4 rounded-xl border border-purple-200/40">
-                            <span class="text-[10px] font-black text-purple-800 uppercase tracking-widest block mb-2.5">
+                       <?php if(!empty($bundle_items)): ?>
+                        <div class="bg-[#f0fbfd] p-4 rounded-xl border border-[#06b7d2]/30">
+                            <span class="text-[10px] font-black text-[#06b7d2] uppercase tracking-widest block mb-2.5">
                                 <i class="fa-solid fa-box-archive mr-1"></i> Komponen Isi Paket Kombinasi
                             </span>
                             <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 <?php foreach($bundle_items as $item): ?>
-                                    <li class="text-purple-900 text-xs flex items-center font-bold">
-                                        <i class="fa-solid fa-circle-check text-[10px] text-purple-500 mr-2 shrink-0"></i> 
-                                        <span class="truncate"><?= htmlspecialchars($item); ?></span>
+                                    <li class="text-[#0594a8] text-xs flex items-center font-bold">
+                                        <i class="fa-solid fa-circle-check text-[10px] text-[#06b7d2] mr-2 shrink-0"></i> 
+                                        <span class="truncate"><?= htmlspecialchars($item['name']); ?></span>
                                     </li>
                                 <?php endforeach; ?>
                             </ul>
@@ -168,7 +196,7 @@ if ($product['type'] == 'bundle') {
                         <div class="border border-gray-200 rounded-xl overflow-hidden bg-gray-50/40">
                             <details class="group p-3 [&_summary::-webkit-details-marker]:hidden cursor-pointer" open>
                                 <summary class="flex items-center justify-between text-gray-900">
-                                    <span class="text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5"><i class="fa-solid fa-circle-info text-indigo-500"></i> Alur Sistem Pre-Order</span>
+                                    <span class="text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5"><i class="fa-solid fa-circle-info text-[#06b7d2]"></i> Alur Sistem Pre-Order</span>
                                     <span class="transition duration-300 group-open:-rotate-180 text-gray-400 text-[10px]"><i class="fa-solid fa-chevron-down"></i></span>
                                 </summary>
                                 <p class="mt-2 leading-relaxed text-gray-500 text-[11px] font-medium border-t border-gray-200/60 pt-2">
@@ -183,9 +211,9 @@ if ($product['type'] == 'bundle') {
                     <a href="products.php" class="w-1/3 text-center py-3 border border-gray-200 text-gray-500 rounded-xl font-bold hover:bg-gray-50 hover:text-gray-900 transition text-xs flex items-center justify-center gap-1">
                         <i class="fa-solid fa-chevron-left text-[9px]"></i> Katalog
                     </a>
-                    <button onclick="addToCart(<?= $product['id']; ?>)" class="w-2/3 py-3 bg-gray-950 hover:bg-gray-900 text-white rounded-xl font-bold shadow-xs transition text-xs flex items-center justify-center gap-2 cursor-pointer">
-                        <i class="fa-solid fa-plus text-[10px]"></i> Masuk Keranjang
-                    </button>
+                    <button onclick="addToCart(<?= $product['id']; ?>, '<?= $product['type']; ?>')" class="w-2/3 py-3 bg-gray-950 hover:bg-gray-900 text-white rounded-xl font-bold shadow-xs transition text-xs flex items-center justify-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-plus text-[10px]"></i> Masuk Keranjang
+                </button>
                 </div>
             </div>
 
@@ -194,7 +222,7 @@ if ($product['type'] == 'bundle') {
 
     <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 flex gap-3 items-center z-40 md:hidden shadow-[0_-4px_20px_rgba(0,0,0,0.03)]">
         <a href="products.php" class="w-12 h-12 border border-gray-200 text-gray-500 rounded-xl flex items-center justify-center transition shrink-0 bg-gray-50"><i class="fa-solid fa-arrow-left text-xs"></i></a>
-        <button onclick="addToCart(<?= $product['id']; ?>)" class="flex-1 h-12 bg-gray-950 hover:bg-gray-900 text-white rounded-xl font-bold transition text-xs flex items-center justify-center gap-2 cursor-pointer">
+        <button onclick="addToCart(<?= $product['id']; ?>, '<?= $product['type']; ?>')" class="flex-1 h-12 bg-gray-950 hover:bg-gray-900 text-white rounded-xl font-bold transition text-xs flex items-center justify-center gap-2 cursor-pointer">
             <i class="fa-solid fa-bag-shopping text-[11px]"></i> Masuk Keranjang
         </button>
     </div>
@@ -233,14 +261,18 @@ if ($product['type'] == 'bundle') {
 
     function showSizechart(url) {
         Swal.fire({
-            title: 'Panduan Ukuran Atribut',
             imageUrl: url,
             imageAlt: 'Sizechart Atribut',
             showConfirmButton: false,
             showCloseButton: true,
+            padding: '1.5rem',
+            backdrop: `rgba(17, 24, 39, 0.7) backdrop-blur-sm`, 
             customClass: { 
-                popup: 'rounded-2xl border border-gray-200 shadow-xl bg-white',
-                title: 'text-sm font-black text-gray-950 uppercase tracking-wide'
+                popup: 'rounded-3xl border border-gray-100 shadow-2xl bg-white w-[92%] md:w-[32rem] p-0',
+                title: 'text-base md:text-lg font-black text-gray-950 uppercase tracking-wide pt-2',
+                htmlContainer: 'text-[11px] text-gray-400 font-medium mb-4',
+                image: 'rounded-xl border border-gray-100 shadow-3xs object-contain max-h-[60vh] md:max-h-[70vh] w-full mx-auto mt-2 mb-0 bg-gray-50',
+                closeButton: 'text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all focus:outline-none w-8 h-8 flex items-center justify-center mt-2 mr-2'
             }
         });
     }
@@ -277,16 +309,27 @@ if ($product['type'] == 'bundle') {
                     let html = '';
                     data.items.forEach(item => {
                         html += `
-                        <div class="flex items-center gap-4 bg-white border border-gray-100 p-2.5 rounded-xl shadow-2xs">
-                            <img src="uploads/${item.image || 'placeholder.jpg'}" class="w-14 h-14 object-cover rounded-lg bg-gray-50 border border-gray-100" onerror="this.src='uploads/placeholder.jpg'">
-                            <div class="flex-1 min-w-0">
-                                <h4 class="font-bold text-gray-950 text-xs truncate">${item.name}</h4>
-                                <p class="text-[11px] text-gray-400 font-medium mt-0.5">${item.qty}x — Rp${parseInt(item.price).toLocaleString('id-ID')}</p>
-                            </div>
-                            <button onclick="updateDrawerQty('${item.cart_key}', 'remove')" class="w-6 h-6 rounded-md border border-gray-100 text-gray-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition text-[10px] cursor-pointer">
-                                <i class="fa-solid fa-trash-can"></i>
-                            </button>
-                        </div>`;
+<div class="flex items-center gap-4 bg-white border border-gray-100 p-2.5 rounded-xl shadow-2xs">
+    <img src="uploads/${item.image || 'placeholder.jpg'}" class="w-14 h-14 object-cover rounded-lg bg-gray-50 border border-gray-100" onerror="this.src='uploads/placeholder.jpg'">
+    <div class="flex-1 min-w-0">
+        <h4 class="font-bold text-gray-950 text-xs truncate">${item.name}</h4>
+        
+        <div class="flex items-center gap-3 mt-1.5">
+            <div class="flex items-center border border-gray-200 rounded-md bg-gray-50">
+                <button onclick="updateDrawerQty('${item.cart_key}', 'decrease')" class="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-950 hover:bg-gray-200 transition cursor-pointer text-[10px] rounded-l-md"><i class="fa-solid fa-minus"></i></button>
+                
+                <span class="w-6 text-center text-[10px] font-black text-gray-950">${item.qty}</span>
+                
+                <button onclick="updateDrawerQty('${item.cart_key}', 'increase')" class="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-950 hover:bg-gray-200 transition cursor-pointer text-[10px] rounded-r-md"><i class="fa-solid fa-plus"></i></button>
+            </div>
+            <span class="text-[10px] text-gray-400 font-medium tracking-wide">@ Rp${parseInt(item.price).toLocaleString('id-ID')}</span>
+        </div>
+        
+    </div>
+    <button onclick="updateDrawerQty('${item.cart_key}', 'remove')" class="w-7 h-7 rounded-lg border border-gray-100 text-gray-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition text-[11px] cursor-pointer shrink-0">
+        <i class="fa-solid fa-trash-can"></i>
+    </button>
+</div>`;
                     });
                     container.innerHTML = html;
                     totalLabel.innerText = 'Rp ' + parseInt(data.grand_total).toLocaleString('id-ID');
@@ -298,27 +341,43 @@ if ($product['type'] == 'bundle') {
                     totalLabel.innerText = 'Rp 0';
                 }
             } catch (err) {
-                container.innerHTML = `<div class="text-center py-12 text-xs text-gray-400 font-medium"><i class="fa-solid fa-triangle-exclamation text-xl mb-2 text-indigo-500 block"></i>Gagal memuat item.</div>`;
+                container.innerHTML = `<div class="text-center py-12 text-xs text-gray-400 font-medium"><i class="fa-solid fa-triangle-exclamation text-xl mb-2 text-[#06b7d2] block"></i>Gagal memuat item.</div>`;
             }
         });
     }
 
-    function addToCart(id) {
+    function addToCart(id, type) {
         let selectedSize = '';
-        const sizeRadio = document.querySelector('input[name="product_size"]:checked');
-        
-        // Validasi: Jika produk memiliki varian ukuran, wajib dipilih terlebih dahulu
-        if (document.querySelector('input[name="product_size"]')) {
-            if (!sizeRadio) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Pilih Ukuran!',
-                    text: 'Silakan tentukan ukuran atribut kamu terlebih dahulu.',
-                    confirmButtonColor: '#4f46e5'
-                });
+
+        if (type === 'reguler') {
+            const sizeRadio = document.querySelector('input[name="product_size"]:checked');
+            if (document.querySelector('input[name="product_size"]')) {
+                if (!sizeRadio) {
+                    Swal.fire({ icon: 'warning', title: 'Pilih Ukuran!', text: 'Silakan tentukan ukuran atribut terlebih dahulu.', confirmButtonColor: '#06b7d2' });
+                    return;
+                }
+                selectedSize = sizeRadio.value;
+            }
+        } else if (type === 'bundle') {
+            let bundleSizes = [];
+            let allSelected = true;
+            const sizeGroups = document.querySelectorAll('.bundle-size-group');
+
+            sizeGroups.forEach(group => {
+                const itemName = group.getAttribute('data-item-name');
+                const checkedRadio = group.querySelector('input[type="radio"]:checked');
+                if (checkedRadio) {
+                    bundleSizes.push(`${itemName}: ${checkedRadio.value}`);
+                } else {
+                    allSelected = false; 
+                }
+            });
+
+            if (sizeGroups.length > 0 && !allSelected) {
+                Swal.fire({ icon: 'warning', title: 'Pilih Lengkap!', text: 'Silakan lengkapi pilihan ukuran untuk setiap item dalam paket bundle.', confirmButtonColor: '#06b7d2' });
                 return;
             }
-            selectedSize = sizeRadio.value;
+            selectedSize = bundleSizes.join(', ');
         }
 
         let formData = new FormData();

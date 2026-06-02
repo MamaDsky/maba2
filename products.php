@@ -13,8 +13,8 @@ if (!empty($filter_type)) {
     $where_clause .= " AND p.type = '" . $db->real_escape_string($filter_type) . "'";
 }
 
-// Logika Backend Pagination
-$limit = 4; // Menampilkan 4 produk per halaman agar grid tetap simetris & clean
+// PERUBAHAN: Menampilkan 8 produk per halaman
+$limit = 8; 
 $page = isset($_GET['page']) ? intval($_GET['page']) : 1;
 if ($page < 1) $page = 1;
 $start = ($page - 1) * $limit;
@@ -47,31 +47,34 @@ $all_products = $db->query($query);
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-[#fafafa] text-gray-900 font-sans antialiased selection:bg-indigo-100 selection:text-indigo-900">
+<body class="bg-[#fafafa] text-gray-900 font-sans antialiased selection:bg-[#dff6f9] selection:text-[#024a54]">
 
-    <nav class="bg-white/70 backdrop-blur-md border-b border-gray-200/60 py-4 px-4 sm:px-8 md:px-16 flex justify-between items-center sticky top-0 z-50">
-        <a href="index.php" class="text-sm font-black tracking-tight flex items-center gap-2 text-gray-950">
-            <div class="w-6 h-6 bg-gray-950 rounded-md flex items-center justify-center text-white text-[10px]">
-                <i class="fa-solid fa-graduation-cap"></i>
-            </div>
-            <span>Maba<span class="text-indigo-600">Store.</span></span>
-        </a>
-        <div class="flex space-x-4 sm:space-x-8 font-bold text-xs text-gray-400 items-center">
-            <a href="index.php" class="hover:text-gray-900 transition">Home</a>
-            <a href="products.php" class="text-gray-950 border-b-2 border-gray-950 pb-1 font-black">Katalog</a>
-            <a href="track.php" class="hover:text-gray-900 transition">Lacak</a>
+    <nav class="bg-white/80 backdrop-blur-md border-b border-gray-200/60 py-3.5 sm:py-4 px-4 sm:px-8 md:px-16 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex flex-row justify-between items-center w-full gap-2">
+            <a href="index.php" class="text-sm font-black tracking-tight flex items-center gap-2 text-gray-950 shrink-0">
+                <div class="w-7 h-7 bg-gray-950 rounded-md flex items-center justify-center text-white text-xs shadow-3xs">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                </div>
+                <span class="hidden sm:block">Maba<span class="text-[#06b7d2]">Store.</span></span>
+            </a>
             
-            <button onclick="toggleCartDrawer()" class="hover:text-gray-900 transition cursor-pointer relative pt-0.5">
-                <i class="fa-solid fa-bag-shopping text-sm text-gray-800"></i>
-                <span class="nav-cart-counter absolute -top-1.5 -right-2 bg-indigo-600 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center scale-80"><?= isset($_SESSION['cart']) ? array_sum($_SESSION['cart']) : 0; ?></span>
-            </button>
+            <div class="flex items-center gap-4 sm:gap-6 md:gap-10 font-bold text-[11px] sm:text-xs text-gray-400">
+                <a href="index.php" class="hover:text-gray-950 hover:scale-105 transition-all">Home</a>
+                <a href="products.php" class="text-gray-950 border-b-2 border-gray-950 pb-1 font-black transition-all">Katalog</a>
+                <a href="track.php" class="hover:text-gray-950 hover:scale-105 transition-all">Lacak</a>
+                
+                <button onclick="toggleCartDrawer()" class="hover:text-gray-950 transition-all cursor-pointer relative ml-1 sm:ml-2 shrink-0">
+                    <i class="fa-solid fa-bag-shopping text-sm sm:text-base text-gray-800"></i>
+                    <span class="nav-cart-counter absolute -top-1.5 -right-2 bg-[#06b7d2] text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center scale-80"><?= isset($_SESSION['cart']) ? array_sum($_SESSION['cart']) : 0; ?></span>
+                </button>
+            </div>
         </div>
     </nav>
 
     <main class="max-w-7xl mx-auto px-4 sm:px-8 md:px-16 py-6 md:py-12">
         <div class="mb-6 md:mb-12 border-b border-gray-200/60 pb-6 md:pb-8 flex flex-col lg:flex-row lg:items-end justify-between gap-4">
             <div>
-                <span class="text-[10px] font-black text-indigo-600 uppercase tracking-widest block">Katalog Aset Atribut</span>
+                <span class="text-[10px] font-black text-[#06b7d2] uppercase tracking-widest block">Katalog Aset Atribut</span>
                 <h1 class="text-xl md:text-3xl font-black text-gray-950 tracking-tight mt-1">Koleksi Perlengkapan</h1>
                 <p class="text-gray-400 text-xs mt-1 font-medium">Cari kebutuhan ospek fakultas, paket kombinasi jualan merchant, dan kemeja wajib maba.</p>
             </div>
@@ -114,7 +117,7 @@ $all_products = $db->query($query);
                             <div class="flex gap-1 w-full sm:w-auto justify-end">
                                 <a href="detail.php?id=<?= $row['id']; ?>" class="w-7 h-7 md:w-8 md:h-8 rounded-lg border border-gray-200 text-gray-500 hover:text-gray-900 hover:bg-gray-50 flex items-center justify-center transition text-[10px] md:text-xs shrink-0" title="Detail"><i class="fa-solid fa-eye"></i></a>
                                 
-                                <button onclick="handleAddToCart(<?= $row['id']; ?>, '<?= htmlspecialchars($row['available_sizes'] ?? '', ENT_QUOTES); ?>')" class="flex-1 sm:flex-none bg-gray-950 hover:bg-gray-800 text-white text-[10px] md:text-xs px-2.5 py-1 md:py-1.5 rounded-lg font-bold transition cursor-pointer flex items-center justify-center gap-1">
+                               <button onclick="handleAddToCart(<?= $row['id']; ?>, '<?= htmlspecialchars($row['available_sizes'] ?? '', ENT_QUOTES); ?>', '<?= $row['type']; ?>')" class="flex-1 sm:flex-none bg-gray-950 hover:bg-gray-800 text-white text-[10px] md:text-xs px-2.5 py-1 md:py-1.5 rounded-lg font-bold transition cursor-pointer flex items-center justify-center gap-1">
                                     <i class="fa-solid fa-plus text-[9px]"></i> <span>Bag</span>
                                 </button>
                             </div>
@@ -151,9 +154,49 @@ $all_products = $db->query($query);
         <button onclick="toggleCartDrawer()" class="bg-gray-950 hover:bg-gray-900 text-white px-4 py-3 rounded-xl shadow-md flex items-center space-x-3 text-xs font-bold transition border border-gray-800 cursor-pointer">
             <i class="fa-solid fa-bag-shopping text-gray-300"></i>
             <span>Keranjang</span>
-            <span id="cart-counter" class="bg-indigo-600 text-white px-1.5 py-0.5 rounded font-black text-[10px]"><?= isset($_SESSION['cart']) ? array_sum($_SESSION['cart']) : 0; ?></span>
+            <span id="cart-counter" class="bg-[#06b7d2] text-white px-1.5 py-0.5 rounded font-black text-[10px]"><?= isset($_SESSION['cart']) ? array_sum($_SESSION['cart']) : 0; ?></span>
         </button>
     </div>
+
+    <footer class="bg-white border-t border-gray-200/60 pt-12 pb-6 px-4 sm:px-8 md:px-16">
+        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-8 pb-10 border-b border-gray-100">
+            <div class="md:col-span-5 space-y-4">
+                <a href="index.php" class="text-sm font-black tracking-tight flex items-center gap-2 text-gray-950">
+                    <div class="w-7 h-7 bg-gray-950 rounded-md flex items-center justify-center text-white text-xs">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                    </div>
+                    <span>Maba<span class="text-[#06b7d2]">Store.</span></span>
+                </a>
+                <p class="text-xs font-medium text-gray-400 max-w-sm leading-relaxed">
+                    Platform distribusi perlengkapan terpusat untuk membantu menyukseskan pemenuhan kebutuhan penunjang aktivitas akademik mahasiswa secara aman dan terstandardisasi.
+                </p>
+            </div>
+
+            <div class="md:col-span-3 space-y-3">
+                <h5 class="text-[10px] font-black uppercase tracking-widest text-gray-950">Ecosystem</h5>
+                <ul class="space-y-2 text-xs font-bold text-gray-400">
+                    <li><a href="index.php" class="hover:text-[#06b7d2] transition">Halaman Utama</a></li>
+                    <li><a href="products.php" class="hover:text-[#06b7d2] transition">Katalog Atribut</a></li>
+                    <li><a href="track.php" class="hover:text-[#06b7d2] transition">Lacak Invoice Pesanan</a></li>
+                </ul>
+            </div>
+
+            <div class="md:col-span-4 space-y-3">
+                <h5 class="text-[10px] font-black uppercase tracking-widest text-gray-950">Support & Help</h5>
+                <ul class="space-y-2 text-xs font-medium text-gray-400">
+                    <li class="flex items-center gap-1.5 font-bold text-gray-800"><i class="fa-brands fa-whatsapp text-emerald-500 text-sm"></i> +62 812-3456-7890</li>
+                    <li>Jam Layanan: 08.00 - 17.00 WIB</li>
+                    <li class="text-[11px] italic text-red-400 font-semibold">* Atribut dikelola secara resmi sesuai batchPO aktif.</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="max-w-7xl mx-auto pt-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-[10px] sm:text-[11px] text-gray-400 font-medium">
+            <p>© 2026 MabaStore. All Rights Reserved.</p>
+            <div class="flex gap-4">
+            </div>
+        </div>
+    </footer>
 
     <div id="cart-backdrop" class="fixed inset-0 bg-black/40 backdrop-blur-xs opacity-0 pointer-events-none transition-opacity duration-300 z-50" onclick="toggleCartDrawer()"></div>
     
@@ -218,18 +261,28 @@ $all_products = $db->query($query);
                 if (data.status === 'success' && data.items.length > 0) {
                     let html = '';
                     data.items.forEach(item => {
-                        // PERBAIKAN: Gunakan item.cart_key untuk menghapus item
                         html += `
-                        <div class="flex items-center gap-4 bg-white border border-gray-100 p-2.5 rounded-xl shadow-2xs">
-                            <img src="uploads/${item.image || 'placeholder.jpg'}" class="w-14 h-14 object-cover rounded-lg bg-gray-50 border border-gray-100" onerror="this.src='uploads/placeholder.jpg'">
-                            <div class="flex-1 min-w-0">
-                                <h4 class="font-bold text-gray-950 text-xs truncate">${item.name}</h4>
-                                <p class="text-[11px] text-gray-400 font-medium mt-0.5">${item.qty}x — Rp${parseInt(item.price).toLocaleString('id-ID')}</p>
-                            </div>
-                            <button onclick="updateDrawerQty('${item.cart_key}', 'remove')" class="w-6 h-6 rounded-md border border-gray-100 text-gray-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition text-[10px] cursor-pointer">
-                                <i class="fa-solid fa-trash-can"></i>
-                            </button>
-                        </div>`;
+<div class="flex items-center gap-4 bg-white border border-gray-100 p-2.5 rounded-xl shadow-2xs">
+    <img src="uploads/${item.image || 'placeholder.jpg'}" class="w-14 h-14 object-cover rounded-lg bg-gray-50 border border-gray-100" onerror="this.src='uploads/placeholder.jpg'">
+    <div class="flex-1 min-w-0">
+        <h4 class="font-bold text-gray-950 text-xs truncate">${item.name}</h4>
+        
+        <div class="flex items-center gap-3 mt-1.5">
+            <div class="flex items-center border border-gray-200 rounded-md bg-gray-50">
+                <button onclick="updateDrawerQty('${item.cart_key}', 'decrease')" class="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-950 hover:bg-gray-200 transition cursor-pointer text-[10px] rounded-l-md"><i class="fa-solid fa-minus"></i></button>
+                
+                <span class="w-6 text-center text-[10px] font-black text-gray-950">${item.qty}</span>
+                
+                <button onclick="updateDrawerQty('${item.cart_key}', 'increase')" class="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-950 hover:bg-gray-200 transition cursor-pointer text-[10px] rounded-r-md"><i class="fa-solid fa-plus"></i></button>
+            </div>
+            <span class="text-[10px] text-gray-400 font-medium tracking-wide">@ Rp${parseInt(item.price).toLocaleString('id-ID')}</span>
+        </div>
+        
+    </div>
+    <button onclick="updateDrawerQty('${item.cart_key}', 'remove')" class="w-7 h-7 rounded-lg border border-gray-100 text-gray-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition text-[11px] cursor-pointer shrink-0">
+        <i class="fa-solid fa-trash-can"></i>
+    </button>
+</div>`;
                     });
                     container.innerHTML = html;
                     totalLabel.innerText = 'Rp ' + parseInt(data.grand_total).toLocaleString('id-ID');
@@ -244,40 +297,68 @@ $all_products = $db->query($query);
                 console.error("Gagal parse JSON.", text);
                 container.innerHTML = `
                 <div class="text-center py-12 text-gray-400 text-xs font-medium">
-                    <i class="fa-solid fa-triangle-exclamation text-xl mb-2 text-indigo-500 block"></i>Gagal memuat item, coba segarkan halaman.
+                    <i class="fa-solid fa-triangle-exclamation text-xl mb-2 text-[#06b7d2] block"></i>Gagal memuat item, coba segarkan halaman.
                 </div>`;
             }
         })
         .catch(error => console.error("Fetch error:", error));
     }
 
-    // FITUR BARU: Cek ukuran sebelum masuk keranjang
-    function handleAddToCart(id, sizesStr) {
+  // FITUR BARU: Cek ukuran dengan Pop-Up Premium (Custom HTML Pill Buttons)
+    function handleAddToCart(id, sizesStr, type) {
+        if (type === 'bundle') {
+            window.location.href = 'detail.php?id=' + id;
+            return;
+        }
+        
         if (sizesStr && sizesStr.trim() !== '') {
-            // Jika ada varian ukuran, pecah menjadi array dan buat opsi untuk SweetAlert2
             const sizesArray = sizesStr.split(',').map(s => s.trim()).filter(s => s);
-            let inputOptions = {};
+            
+            // KITA BUAT DESAIN TOMBOL UKURAN SENDIRI (Gaya Pill Premium)
+            let sizesHtml = `
+                <p class="text-xs text-gray-400 font-medium mb-5">Pastikan ukuran atribut sesuai dengan panduan sizechart.</p>
+                <div class="flex flex-wrap justify-center gap-2.5">
+            `;
+            
             sizesArray.forEach(s => {
-                inputOptions[s] = s;
+                sizesHtml += `
+                    <label class="cursor-pointer">
+                        <input type="radio" name="premium_size" value="${s}" class="sr-only peer">
+                        <span class="px-5 py-2.5 text-xs font-black rounded-xl border-2 border-gray-100 bg-white text-gray-500 inline-block peer-checked:bg-[#06b7d2] peer-checked:text-white peer-checked:border-[#06b7d2] hover:border-gray-300 transition-all shadow-3xs">
+                            ${s}
+                        </span>
+                    </label>
+                `;
             });
+            sizesHtml += '</div>';
 
             Swal.fire({
-                title: 'Pilih Ukuran Atribut',
-                input: 'radio',
-                inputOptions: inputOptions,
-                inputValidator: (value) => {
-                    if (!value) {
-                        return 'Kamu wajib memilih salah satu ukuran!'
-                    }
-                },
+                title: 'Pilih Ukuran',
+                html: sizesHtml, // Masukkan desain kustom kita ke sini
                 showCancelButton: true,
                 confirmButtonText: 'Tambah ke Tas',
                 cancelButtonText: 'Batal',
-                confirmButtonColor: '#4f46e5',
-                cancelButtonColor: '#e5e7eb',
+                buttonsStyling: false, 
+                backdrop: `rgba(17, 24, 39, 0.7) backdrop-blur-sm`,
                 customClass: {
-                    title: 'text-sm font-black text-gray-900',
-                    cancelButton: 'text-gray-900'
+                    popup: 'rounded-3xl border border-gray-100 shadow-2xl bg-white w-[92%] md:w-[28rem] p-5 md:p-8',
+                    title: 'text-lg md:text-xl font-black text-gray-950 uppercase tracking-tight mb-2',
+                    
+                    // PERBAIKAN: Wadah tombol dipaksa berjejer lurus dengan jarak pas
+                    actions: 'flex flex-row gap-3 w-full mt-8',
+                    
+                    // PERBAIKAN: flex-1 membuat ukuran 50:50, !m-0 membunuh margin bawaan SweetAlert, py-4 membuat tombol lebih gemuk/premium
+                    confirmButton: 'flex-1 bg-[#06b7d2] hover:bg-[#0594a8] text-white text-xs md:text-sm font-bold py-3.5 md:py-4 rounded-xl transition shadow-md cursor-pointer !m-0',
+                    cancelButton: 'flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs md:text-sm font-bold py-3.5 md:py-4 rounded-xl transition cursor-pointer !m-0'
+                },
+                // Logika untuk menangkap pilihan ukuran dari HTML kustom kita
+                preConfirm: () => {
+                    const selectedSize = Swal.getPopup().querySelector('input[name="premium_size"]:checked');
+                    if (!selectedSize) {
+                        Swal.showValidationMessage('Kamu wajib memilih salah satu ukuran terlebih dahulu!');
+                        return false; // Mencegah pop-up tertutup kalau belum milih
+                    }
+                    return selectedSize.value;
                 }
             }).then((result) => {
                 if (result.isConfirmed) {
@@ -285,12 +366,10 @@ $all_products = $db->query($query);
                 }
             });
         } else {
-            // Jika tidak ada varian ukuran (All Size), langsung eksekusi
             executeAddToCart(id, '');
         }
     }
 
-    // Fungsi utama untuk memproses ke backend
     function executeAddToCart(id, selectedSize) {
         let formData = new FormData();
         formData.append('action', 'add');
@@ -308,7 +387,6 @@ $all_products = $db->query($query);
         });
     }
 
-    // PERBAIKAN: Menghapus item berdasarkan cartKey (bukan cuma ID)
     function updateDrawerQty(cartKey, actionType) {
         let formData = new FormData();
         formData.append('action', actionType);

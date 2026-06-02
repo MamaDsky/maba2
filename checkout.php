@@ -111,75 +111,78 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['upload_proof'])) {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Secure Checkout - MabaStore</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
-<body class="bg-[#f4f4f7] py-12 px-4 md:px-8 text-sm text-gray-800 tracking-tight font-sans">
 
-    <div class="max-w-5xl mx-auto flex flex-col gap-6">
+<body class="bg-gray-50 md:bg-[#f4f4f7] text-sm text-gray-800 tracking-tight font-sans selection:bg-[#dff6f9] selection:text-[#024a54]"> 
+
+    <div class="max-w-5xl mx-auto flex flex-col md:p-8 w-full">
         
-        <header class="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-8 rounded-3xl border border-gray-100 shadow-xs gap-4">
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center bg-white px-5 py-6 md:p-8 md:rounded-3xl border-b md:border border-gray-200 md:border-gray-100 md:shadow-xs gap-4 w-full md:mb-6">
             <div>
-                <span class="text-xxs font-extrabold uppercase tracking-widest text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md">Secure Checkout</span>
+                <span class="text-xxs font-extrabold uppercase tracking-widest text-[#06b7d2] bg-[#f0fbfd] px-2.5 py-1 rounded-md">Secure Checkout</span>
                 <h1 class="text-2xl md:text-3xl font-black text-gray-900 mt-2">Penyelesaian Pesanan</h1>
             </div>
-            <a href="products.php" class="text-xs font-bold text-gray-400 hover:text-indigo-600 transition flex items-center gap-1">← Kembali ke halaman produk</a>
+            <a href="products.php" class="text-xs font-bold text-gray-400 hover:text-[#06b7d2] transition flex items-center gap-1">← Kembali ke halaman produk</a>
         </header>
 
         <?php if(empty($items) && !$show_modal): ?>
-            <div class="bg-white p-12 rounded-3xl text-center border border-gray-100 shadow-xs">
+            <div class="bg-white p-12 md:rounded-3xl text-center border-b md:border border-gray-200 md:border-gray-100 md:shadow-xs">
                 <p class="text-gray-400 italic">Keranjang belanja kosong. Silakan pilih produk maba terlebih dahulu.</p>
                 <a href="products.php" class="inline-block mt-6 bg-gray-900 hover:bg-gray-800 text-white px-6 py-3 rounded-2xl font-bold text-xs transition">Lihat Katalog Produk</a>
             </div>
         <?php elseif(!$show_modal): ?>
             
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <form method="POST" class="md:col-span-2 space-y-6">
-                    <div class="bg-white p-8 rounded-3xl border border-gray-100 shadow-xs space-y-6">
-                        <h2 class="text-lg font-extrabold text-gray-900 border-b border-gray-50 pb-3">📋 Informasi Pengiriman & Identitas</h2>
+            <div class="flex flex-col md:flex-row md:gap-6 w-full items-start pb-24 md:pb-0">
+                
+                <form method="POST" class="w-full md:w-2/3 order-2 md:order-1 flex flex-col">
+                    <div class="bg-white px-5 py-6 md:p-8 md:rounded-3xl border-b md:border border-gray-200 md:border-gray-100 md:shadow-xs space-y-6">
+                        <h2 class="text-base md:text-lg font-extrabold text-gray-900 border-b border-gray-50 pb-3">📋 Informasi Pengiriman & Identitas</h2>
                         
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div class="space-y-1">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 md:gap-4">
+                            <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">Nama Lengkap</label>
-                                <input type="text" name="name" required placeholder="Nama Anda" class="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:bg-white transition-all">
+                                <input type="text" name="name" required placeholder="Nama Anda" class="w-full bg-gray-50 border border-gray-200 md:border-gray-100 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-[#06b7d2] focus:bg-white transition-all">
                             </div>
-                            <div class="space-y-1">
+                            <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">Departemen / Jurusan</label>
-                                <input type="text" name="department" required placeholder="Contoh: Sistem Informasi" class="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:bg-white transition-all">
+                                <input type="text" name="department" required placeholder="Contoh: Sistem Informasi" class="w-full bg-gray-50 border border-gray-200 md:border-gray-100 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-[#06b7d2] focus:bg-white transition-all">
                             </div>
                         </div>
 
-                        <div class="space-y-1">
+                        <div class="space-y-1.5">
                             <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">Nomor WhatsApp Aktif</label>
-                            <input type="text" name="phone" required placeholder="Contoh: 08123456789" class="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:bg-white transition-all">
+                            <input type="text" name="phone" required placeholder="Contoh: 08123456789" class="w-full bg-gray-50 border border-gray-200 md:border-gray-100 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-[#06b7d2] focus:bg-white transition-all">
                         </div>
 
-                        <div class="space-y-1">
-                            <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">Alamat Lengkap / Nomor Kamar Asrama</label>
-                            <textarea name="address" required rows="3" placeholder="Tulis alamat kost atau blok asrama secara detail..." class="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:bg-white transition-all resize-none"></textarea>
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">Alamat Lengkap / Nomor Kamar</label>
+                            <textarea name="address" required rows="3" placeholder="Tulis alamat secara detail..." class="w-full bg-gray-50 border border-gray-200 md:border-gray-100 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-[#06b7d2] focus:bg-white transition-all resize-none"></textarea>
                         </div>
                     </div>
 
-                    <button type="submit" name="submit_order" class="w-full bg-gray-900 hover:bg-gray-800 text-white font-bold py-4 rounded-2xl shadow-md transition tracking-wide text-sm">
-                        Konfirmasi & Proses Pembayaran →
-                    </button>
+                    <div class="bg-white px-5 py-6 md:p-0 md:mt-6 border-b md:border-0 border-gray-200">
+                        <button type="submit" name="submit_order" class="w-full bg-gray-900 hover:bg-gray-800 text-white font-bold py-4 rounded-xl md:rounded-2xl shadow-md transition tracking-wide text-sm cursor-pointer">
+                            Konfirmasi & Proses Pembayaran →
+                        </button>
+                    </div>
                 </form>
 
-                <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-xs flex flex-col justify-between h-fit space-y-6">
+                <div class="w-full md:w-1/3 bg-white px-5 py-6 md:p-6 md:rounded-3xl border-b md:border border-gray-200 md:border-gray-100 md:shadow-xs flex flex-col justify-between h-fit space-y-6 order-1 md:order-2">
                     <div>
-                        <h2 class="text-base font-extrabold text-gray-900 border-b border-gray-50 pb-3">🛒 Item Belanjaan</h2>
+                        <h2 class="text-sm md:text-base font-extrabold text-gray-900 border-b border-gray-50 pb-3">🛒 Item Belanjaan</h2>
                         
                         <div class="divide-y divide-gray-50 max-h-60 overflow-y-auto pr-1">
                             <?php foreach($items as $it): ?>
                                 <div class="py-3 flex justify-between items-center text-xs">
                                     <div class="max-w-[70%]">
                                         <p class="font-bold text-gray-800 truncate"><?= htmlspecialchars($it['name']); ?></p>
-                                        
                                         <?php if(!empty($it['selected_size'])): ?>
-                                            <span class="inline-block bg-indigo-50 border border-indigo-100 text-indigo-600 font-black text-[9px] px-1.5 py-0.5 rounded-md mt-0.5 mb-0.5">Size: <?= htmlspecialchars($it['selected_size']); ?></span>
+                                            <span class="inline-block bg-[#f0fbfd] border border-[#06b7d2]/20 text-[#06b7d2] font-black text-[9px] px-1.5 py-0.5 rounded-md mt-0.5 mb-0.5">Size: <?= htmlspecialchars($it['selected_size']); ?></span>
                                         <?php endif; ?>
-                                        
                                         <p class="text-xxs text-gray-400 mt-0.5"><?= $it['qty']; ?>x @ Rp <?= number_format($it['price'], 0, ',', '.'); ?></p>
                                     </div>
                                     <p class="font-bold text-gray-900">Rp <?= number_format($it['subtotal'], 0, ',', '.'); ?></p>
@@ -195,58 +198,52 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['upload_proof'])) {
                         </div>
                         <div class="flex justify-between items-center pt-2 border-t border-gray-50">
                             <span class="text-xs font-bold text-gray-900">Total Tagihan:</span>
-                            <span class="text-xl font-black text-indigo-600">Rp <?= number_format($total_price, 0, ',', '.'); ?></span>
+                            <span class="text-xl font-black text-[#06b7d2]">Rp <?= number_format($total_price, 0, ',', '.'); ?></span>
                         </div>
                     </div>
                 </div>
+
             </div>
 
         <?php endif; ?>
-    </div>
-
-    <div id="paymentModal" class="fixed inset-0 bg-gray-900/40 z-50 hidden flex items-center justify-center p-4 backdrop-blur-md">
-        <div class="bg-white w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl transition-all border border-gray-100">
+  
+   <div id="paymentModal" class="fixed inset-0 bg-gray-900/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-md rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl transition-all border border-gray-100 flex flex-col max-h-[90vh]">
             
-            <div class="bg-gray-900 p-6 text-white text-center">
-                <h3 class="text-lg font-black tracking-tight">🔒 Transaksi Terkunci Aman</h3>
-                <p class="text-xxs text-gray-400 mt-1 uppercase tracking-widest font-bold">Langkah Terakhir: Verifikasi Pembayaran</p>
+            <div class="bg-gray-950 p-5 md:p-6 text-white text-center shrink-0">
+                <h3 class="text-base md:text-lg font-black tracking-tight">🔒 Transaksi Terkunci Aman</h3>
+                <p class="text-[10px] md:text-xxs text-gray-400 mt-1 uppercase tracking-widest font-bold">Langkah Terakhir: Verifikasi Pembayaran</p>
             </div>
             
-            <form method="POST" action="checkout.php" enctype="multipart/form-data" class="p-6 md:p-8 space-y-5">
+            <form method="POST" action="checkout.php" enctype="multipart/form-data" class="p-5 md:p-8 space-y-5 overflow-y-auto">
                 <input type="hidden" name="order_code" id="modal_order_code">
                 
-                <div class="bg-gray-50 border border-gray-100 rounded-2xl p-4 flex justify-between items-center">
-                    <div>
-                        <span class="text-xxs text-gray-400 font-bold uppercase tracking-wider block">Wajib Ditransfer</span>
-                        <span id="modal_total_display" class="text-2xl font-black text-indigo-600"></span>
-                    </div>
-                    <span class="text-xxs font-extrabold text-amber-600 bg-amber-50 border border-amber-100 px-2 py-1 rounded-md uppercase tracking-wider">Menunggu Bukti</span>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                    <div class="space-y-1.5">
-                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block">Bank Transfer</span>
-                        <div class="bg-gray-50 border border-gray-100 rounded-xl p-3">
-                            <p class="text-xxs font-bold text-indigo-600 uppercase">Bank Mandiri</p>
-                            <p class="text-base font-mono font-black text-gray-900 tracking-wide mt-1">1400-0123-4567</p>
-                            <p class="text-[10px] text-gray-400 font-medium mt-0.5">A/N Algatra Digital Agency</p>
-                        </div>
-                    </div>
-                    <div class="space-y-1.5 text-center">
-                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block text-left sm:text-center">Scan QRIS</span>
-                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://algatra.id" class="w-24 h-24 mx-auto rounded-xl border border-gray-100 p-1 bg-white">
+                <div class="bg-gray-50 border border-gray-100 rounded-xl p-4 flex flex-col gap-2 text-center shadow-3xs">
+                    <span class="text-[11px] text-gray-400 font-bold uppercase tracking-wider block">Total Wajib Ditransfer</span>
+                    <span id="modal_total_display" class="text-3xl font-black text-[#06b7d2] tracking-tight"></span>
+                    <div class="mt-0.5">
+                        <span class="text-[9px] font-extrabold text-amber-600 bg-amber-50 border border-amber-200/60 px-2.5 py-1 rounded-md uppercase tracking-wider inline-block">Menunggu Bukti Transfer</span>
                     </div>
                 </div>
 
-                <div class="border-t border-gray-100 pt-4">
-                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Upload Nota / Bukti Pembayaran *</label>
-                    <input type="file" name="proof" required accept="image/*" class="w-full text-xs text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer">
+                <div class="pt-2">
+                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-2 text-center">Tujuan Pembayaran (BCA)</span>
+                    <div class="bg-[#f0fbfd] border border-[#06b7d2]/30 rounded-xl p-5 text-center">
+                        <p class="text-[11px] font-bold text-[#06b7d2] uppercase tracking-widest">Bank Central Asia (BCA)</p>
+                        <p class="text-2xl font-mono font-black text-gray-900 tracking-widest mt-1.5 select-all">003-142-7109</p>
+                        <p class="text-[11px] text-gray-500 font-medium mt-1">A/N MUHAMAD FARREL RIZKY ALDOVA</p>
+                    </div>
                 </div>
 
-                <button type="submit" name="upload_proof" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-md transition text-sm">
+                <div class="border-t border-gray-100 pt-5">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2 text-center">Upload Bukti Transfer *</label>
+                    <input type="file" name="proof" required accept="image/*" class="w-full text-xs text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-[#f0fbfd] file:text-[#06b7d2] hover:file:bg-[#dff6f9] cursor-pointer border border-gray-200 rounded-xl p-1 bg-gray-50">
+                </div>
+
+                <button type="submit" name="upload_proof" class="w-full bg-[#06b7d2] hover:bg-[#0594a8] text-white font-bold py-3.5 rounded-xl shadow-md transition text-sm cursor-pointer mt-2">
                     Kirim Bukti Pembayaran Resmi
                 </button>
-                <p class="text-center text-[10px] text-red-400 font-semibold italic">⚠️ Selesaikan langkah ini. Pembayaran otomatis terkunci di halaman ini jika ditutup.</p>
+                <p class="text-center text-[10px] text-red-500 font-semibold italic mt-2 px-2">⚠️ Selesaikan langkah ini. Pembayaran otomatis terkunci di halaman ini jika ditutup.</p>
             </form>
         </div>
     </div>
