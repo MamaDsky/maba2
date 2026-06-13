@@ -184,10 +184,37 @@ $all_batches = $db->query("SELECT id, batch_name FROM batches ORDER BY id DESC")
                                 <td class="py-4 px-4 font-bold text-gray-900 text-base">
                                     Rp<?= number_format($ord['total_price'],0,',','.'); ?>
                                 </td>
-                                <td class="py-4 px-6 text-right space-x-3 whitespace-nowrap">
-                                    <button onclick="openEditModal(<?= htmlspecialchars(json_encode($ord)); ?>)" class="text-indigo-600 hover:text-indigo-900 font-semibold transition cursor-pointer">Edit</button>
-                                    <button onclick="confirmDeleteOrder(<?= $ord['id']; ?>)" class="text-red-500 hover:text-red-700 font-semibold transition cursor-pointer">Hapus</button>
-                                </td>
+                               <td class="py-4 px-6 text-right space-x-3 whitespace-nowrap">
+    <?php
+    // 1. Format nomor HP (Membersihkan karakter non-angka & ubah awalan 0 menjadi 62)
+    $wa_phone = preg_replace('/[^0-9]/', '', $ord['customer_phone']);
+    if(substr($wa_phone, 0, 1) == '0') {
+        $wa_phone = '62' . substr($wa_phone, 1);
+    }
+
+    // 2. Siapkan template pesan WhatsApp
+    $wa_text = "Halo, *" . $ord['customer_name'] . "*! 👋\n\n";
+    $wa_text .= "Terima kasih telah melakukan pre-order. Berikut adalah informasi pesanan Anda:\n\n";
+    $wa_text .= "📦 *Nomor PO:* " . $ord['order_code'] . "\n\n";
+    $wa_text .= "⚠️ *PENTING:* Mohon pastikan untuk *menyimpan Nama dan Nomor PO* di atas ya. Kedua data tersebut akan digunakan untuk melakukan tracking (pelacakan) status pesanan di website kami.\n\n";
+    $wa_text .= "Terima kasih! ✨";
+
+    // 3. Generate Link WA
+    $wa_link = "https://wa.me/" . $wa_phone . "?text=" . urlencode($wa_text);
+    ?>
+    
+    <!-- Tombol WhatsApp Baru -->
+    <a href="<?= $wa_link; ?>" target="_blank" class="text-emerald-500 hover:text-emerald-700 font-semibold transition inline-flex items-center gap-1 cursor-pointer">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+        </svg>
+        Chat WA
+    </a>
+
+    <!-- Tombol Edit & Hapus Lama -->
+    <button onclick="openEditModal(<?= htmlspecialchars(json_encode($ord)); ?>)" class="text-indigo-600 hover:text-indigo-900 font-semibold transition cursor-pointer">Edit</button>
+    <button onclick="confirmDeleteOrder(<?= $ord['id']; ?>)" class="text-red-500 hover:text-red-700 font-semibold transition cursor-pointer">Hapus</button>
+</td>
                             </tr>
                             <?php endwhile; ?>
                         <?php else: ?>

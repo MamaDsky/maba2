@@ -1,0 +1,4 @@
+[03-Jun-2026 16:05:05 Asia/Jakarta] PHP Fatal error:  Uncaught Error: Call to a member function fetch_assoc() on bool in /home/mabw6842/public_html/admin/orders.php:46
+Stack trace:
+#0 {main}
+  thrown in /home/mabw6842/public_html/admin/orders.php on line 46
