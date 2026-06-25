@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_order_edit'])) {
 }
 
 // 🎛️ LOGIKA BACKEND PAGINATION, FILTER, & SEARCH ORDERS
-$limit = 10; 
+$limit = 12; // Diubah ke 12 agar pas dengan grid susunan kelipatan 2, 3, atau 4 card
 $page = isset($_GET['page']) ? intval($_GET['page']) : 1;
 $start = ($page > 1) ? ($page * $limit) - $limit : 0;
 
@@ -99,7 +99,7 @@ $all_products_list = $db->query("SELECT name FROM products WHERE type = 'reguler
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
-<body class="bg-gray-50 p-6 md:p-10 text-sm antialiased text-gray-800">
+<body class="bg-gray-50 p-4 md:p-10 text-sm antialiased text-gray-800">
 
     <?php if(isset($_SESSION['swal'])): ?>
         <script>
@@ -160,98 +160,106 @@ $all_products_list = $db->query("SELECT name FROM products WHERE type = 'reguler
                 </form>
             </div>
 
-            <div class="mb-4 flex items-center">
+            <div class="mb-6 flex items-center">
                 <span class="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 font-bold px-3 py-1.5 rounded-lg text-xs border border-indigo-100">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
                     Ditemukan: <?= $total_data; ?> data pesanan cocok
                 </span>
             </div>
 
-            <div class="overflow-x-auto -mx-6 md:mx-0">
-                <table class="w-full text-left border-collapse min-w-[1000px] table-auto">
-                    <thead>
-                        <tr class="border-b border-gray-100 text-xs text-gray-400 font-semibold uppercase tracking-wider">
-                            <th class="pb-4 px-6 w-1/4">Kode / Pembeli</th>
-                            <th class="pb-4 px-4 w-1/3">Item Belanjaan</th>
-                            <th class="pb-4 px-4">Status</th>
-                            <th class="pb-4 px-4">No. Resi</th>
-                            <th class="pb-4 px-4">Bukti Bayar</th> 
-                            <th class="pb-4 px-4 text-right">Total Tagihan</th>
-                            <th class="pb-4 px-6 text-right">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-50 text-gray-600">
-                        <?php if($orders->num_rows > 0): ?>
-                            <?php while($ord = $orders->fetch_assoc()): ?>
-                            <tr class="align-top hover:bg-gray-50/50 transition">
-                                <td class="py-4 px-6">
-                                    <span class="font-mono font-bold text-indigo-600 block text-xs tracking-wide"><?= $ord['order_code']; ?></span>
-                                    <span class="text-gray-900 font-bold block mt-0.5 whitespace-normal"><?= htmlspecialchars($ord['customer_name']); ?></span>
-                                    <span class="text-gray-400 text-xs block mt-0.5 font-medium"><?= htmlspecialchars($ord['customer_phone']); ?></span>
-                                </td>
-                                
-                                <td class="py-4 px-4">
-                                    <div class="bg-gray-50 p-3 rounded-xl border border-gray-200/50 space-y-2 w-full">
-                                        <?php 
-                                        $current_order_id = $ord['id'];
-                                        $items_q = $db->query("SELECT oi.quantity, oi.selected_size, p.name FROM order_items oi JOIN products p ON oi.product_id = p.id WHERE oi.order_id = $current_order_id");
-                                        while($item = $items_q->fetch_assoc()):
-                                        ?>
-                                            <div class="text-xs font-semibold text-gray-800 flex flex-col gap-1 border-b border-gray-200/40 pb-1.5 last:border-0 last:pb-0">
-                                                <div class="flex items-start gap-2">
-                                                    <span class="bg-indigo-600 text-white px-2 py-0.5 rounded-md font-black text-[10px] shrink-0">
-                                                        <?= $item['quantity']; ?>x
-                                                    </span> 
-                                                    <span class="whitespace-normal text-gray-950 font-bold leading-normal">
-                                                        <?= htmlspecialchars($item['name']); ?>
-                                                    </span>
-                                                </div>
-                                                
-                                                <?php if(!empty($item['selected_size'])): ?>
-                                                    <div class="pl-7">
-                                                        <span class="inline-block bg-amber-50 text-amber-900 border border-amber-200/60 px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide whitespace-normal break-words">
-                                                            Detail Opsi: <?= htmlspecialchars($item['selected_size']); ?>
-                                                        </span>
-                                                    </div>
-                                                <?php endif; ?>
-                                            </div>
-                                        <?php endwhile; ?>
+            <?php if($orders->num_rows > 0): ?>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <?php while($ord = $orders->fetch_assoc()): ?>
+                        <div class="bg-white border border-gray-200/70 rounded-2xl shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between overflow-hidden">
+                            <div class="p-5 border-b border-gray-100 bg-gray-50/50">
+                                <div class="flex justify-between items-start gap-2 mb-2">
+                                    <div>
+                                        <span class="font-mono font-bold text-indigo-600 text-xs tracking-wide block"><?= $ord['order_code']; ?></span>
+                                        <h3 class="text-gray-900 font-bold text-base mt-0.5 leading-snug"><?= htmlspecialchars($ord['customer_name']); ?></h3>
                                     </div>
-                                </td>
-                                
-                                <td class="py-4 px-4 whitespace-nowrap">
                                     <?php
                                     $status_class = 'bg-amber-50 text-amber-700 border-amber-200/60';
                                     if($ord['status'] == 'Di-packing') $status_class = 'bg-blue-50 text-blue-700 border-blue-200/60';
                                     if($ord['status'] == 'Dikirim') $status_class = 'bg-green-50 text-green-700 border-green-200/60';
                                     ?>
-                                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold inline-block border <?= $status_class; ?>">
+                                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold border shrink-0 <?= $status_class; ?>">
                                         <?= $ord['status']; ?>
                                     </span>
-                                </td>
+                                </div>
+                                <p class="text-gray-400 text-xs font-medium flex items-center gap-1">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                                    <?= htmlspecialchars($ord['customer_phone']); ?>
+                                </p>
+                            </div>
+
+                            <div class="p-5 flex-1 space-y-3">
+                                <div class="bg-gray-50/70 p-3 rounded-xl border border-gray-100 space-y-3">
+                                    <?php 
+                                    $current_order_id = $ord['id'];
+                                    $items_q = $db->query("SELECT oi.quantity, oi.selected_size, p.name FROM order_items oi JOIN products p ON oi.product_id = p.id WHERE oi.order_id = $current_order_id");
+                                    while($item = $items_q->fetch_assoc()):
+                                    ?>
+                                        <div class="text-xs border-b border-gray-200/40 pb-2 last:border-0 last:pb-0">
+                                            <div class="flex items-start gap-2">
+                                                <span class="bg-indigo-600 text-white px-1.5 py-0.5 rounded-md font-black text-[9px] shrink-0 mt-0.5">
+                                                    <?= $item['quantity']; ?>x
+                                                </span> 
+                                                <span class="text-gray-950 font-bold leading-tight">
+                                                    <?= htmlspecialchars($item['name']); ?>
+                                                </span>
+                                            </div>
+                                            
+                                            <?php if(!empty($item['selected_size'])): ?>
+                                                <div class="pl-7 mt-1.5">
+                                                    <span class="block text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-1">Daftar Isi Paket:</span>
+                                                    <ul class="list-disc list-inside bg-white rounded-lg border border-gray-200/60 p-2 space-y-1 text-gray-800 font-medium">
+                                                        <?php 
+                                                        // Memisah isi bundle berdasarkan tanda koma
+                                                        $sub_items = explode(',', $item['selected_size']);
+                                                        foreach($sub_items as $sub_item): 
+                                                            if(trim($sub_item) != ''):
+                                                        ?>
+                                                            <li class="truncate text-[11px]">▪ <?= htmlspecialchars(trim($sub_item)); ?></li>
+                                                        <?php 
+                                                            endif;
+                                                        endforeach; 
+                                                        ?>
+                                                    </ul>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php endwhile; ?>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-2 text-xs pt-1">
+                                    <div>
+                                        <span class="block text-gray-400 text-[10px] font-bold uppercase tracking-wide">No. Resi Kurir</span>
+                                        <div class="mt-1 font-mono">
+                                            <?= !empty($ord['receipt_number']) ? '<span class="bg-gray-100 text-gray-800 px-2 py-0.5 rounded font-bold border border-gray-200 text-[11px]">'.$ord['receipt_number'].'</span>' : '<span class="text-gray-300 italic text-[11px]">Belum Ada</span>'; ?>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <span class="block text-gray-400 text-[10px] font-bold uppercase tracking-wide">Konfirmasi Bayar</span>
+                                        <div class="mt-1">
+                                            <?php if(!empty($ord['payment_proof'])): ?>
+                                                <a href="../uploads/<?= htmlspecialchars($ord['payment_proof']); ?>" target="_blank" class="inline-flex items-center gap-1 bg-white border border-gray-200 text-gray-700 px-2 py-0.5 rounded-md hover:text-indigo-600 transition shadow-3xs text-[11px] font-semibold">
+                                                    👁️ Lihat Bukti
+                                                </a>
+                                            <?php else: ?>
+                                                <span class="text-gray-300 italic text-[11px]">Belum Kirim</span>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="p-5 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-2">
+                                <div>
+                                    <span class="block text-gray-400 text-[10px] font-bold uppercase tracking-wide">Total Tagihan</span>
+                                    <span class="text-gray-900 font-extrabold text-base">Rp<?= number_format($ord['total_price'],0,',','.'); ?></span>
+                                </div>
                                 
-                                <td class="py-4 px-4 font-mono text-xs text-gray-500 whitespace-nowrap">
-                                    <?= !empty($ord['receipt_number']) ? '<span class="bg-gray-100 text-gray-800 px-2 py-1 rounded font-bold border border-gray-200">'.$ord['receipt_number'].'</span>' : '<span class="text-gray-300 italic">Belum Ada</span>'; ?>
-                                </td>
-                                
-                                <td class="py-4 px-4 whitespace-nowrap">
-                                    <?php if(!empty($ord['payment_proof'])): ?>
-                                        <a href="../uploads/<?= htmlspecialchars($ord['payment_proof']); ?>" target="_blank" class="inline-flex items-center gap-1.5 bg-white border border-gray-200 text-gray-700 px-2.5 py-1 rounded-lg text-xs font-bold hover:bg-gray-50 hover:text-indigo-600 transition-all shadow-3xs cursor-pointer">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                                            Cek Bukti
-                                        </a>
-                                    <?php else: ?>
-                                        <span class="inline-flex items-center gap-1 text-gray-300 italic text-[10px] font-medium">
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg> Menunggu
-                                        </span>
-                                    <?php endif; ?>
-                                </td>
-                                
-                                <td class="py-4 px-4 font-bold text-gray-900 text-right text-sm whitespace-nowrap">
-                                    Rp<?= number_format($ord['total_price'],0,',','.'); ?>
-                                </td>
-                                
-                                <td class="py-4 px-6 text-right space-x-3 whitespace-nowrap">
+                                <div class="flex items-center gap-2">
                                     <?php
                                     $wa_phone = preg_replace('/[^0-9]/', '', $ord['customer_phone']);
                                     if(substr($wa_phone, 0, 1) == '0') {
@@ -269,27 +277,23 @@ $all_products_list = $db->query("SELECT name FROM products WHERE type = 'reguler
                                     $wa_text .= "Terima kasih! ✨";
                                     $wa_link = "https://wa.me/" . $wa_phone . "?text=" . urlencode($wa_text);
                                     ?>
-                                    
-                                    <a href="<?= $wa_link; ?>" target="_blank" class="text-emerald-600 hover:text-emerald-800 font-semibold transition inline-flex items-center gap-1 cursor-pointer">
+                                    <a href="<?= $wa_link; ?>" target="_blank" title="Chat WhatsApp" class="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl transition border border-emerald-200">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
                                         </svg>
-                                        Chat WA
                                     </a>
-
-                                    <button onclick="openEditModal(<?= htmlspecialchars(json_encode($ord)); ?>)" class="text-indigo-600 hover:text-indigo-900 font-semibold transition cursor-pointer">Edit</button>
-                                    <button onclick="confirmDeleteOrder(<?= $ord['id']; ?>)" class="text-red-500 hover:text-red-700 font-semibold transition cursor-pointer">Hapus</button>
-                                </td>
-                            </tr>
-                            <?php endwhile; ?>
-                        <?php else: ?>
-                            <tr>
-                                <td colspan="7" class="py-12 text-center text-gray-400 italic bg-gray-50/30 rounded-xl">Belum ada data pesanan masuk untuk filter ini.</td>
-                            </tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
+                                    <button onclick="openEditModal(<?= htmlspecialchars(json_encode($ord)); ?>)" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-xl font-bold border border-indigo-100 transition text-xs">Edit</button>
+                                    <button onclick="confirmDeleteOrder(<?= $ord['id']; ?>)" class="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-500 rounded-xl font-bold border border-red-100 transition text-xs">Hapus</button>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endwhile; ?>
+                </div>
+            <?php else: ?>
+                <div class="py-12 text-center text-gray-400 italic bg-gray-50/50 rounded-2xl border border-dashed border-gray-200">
+                    Belum ada data pesanan masuk untuk filter ini.
+                </div>
+            <?php endif; ?>
         </div>
 
         <div class="flex flex-col sm:flex-row justify-between items-center border-t border-gray-100 pt-5 mt-8 gap-4">

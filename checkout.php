@@ -40,70 +40,93 @@ if (!empty($cart)) {
 
 // Cek status apakah sedang diarahkan untuk membuka modal pembayaran
 $show_modal = isset($_GET['show_modal']) ? true : false;
-$modal_code = isset($_GET['code']) ? htmlspecialchars($_GET['code']) : '';
-$modal_total = isset($_GET['total']) ? intval($_GET['total']) : 0;
+$modal_total = isset($_SESSION['pending_order']['total_price']) ? intval($_SESSION['pending_order']['total_price']) : 0;
 
-// Langkah 1: Handle Submit Form Checkout
+// =========================================================================
+// LANGKAH 1: HANDLE SUBMIT FORM CHECKOUT (SIMPAN SEMENTARA DI SESSION)
+// =========================================================================
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_order'])) {
-    
-    // Cegah keranjang kosong masuk ke database
+    // Cegah keranjang kosong masuk ke proses
     if (!empty($items)) {
-        $batch_q = $db->query("SELECT id FROM batches WHERE is_active = 1 LIMIT 1");
-        $batch_id = ($b = $batch_q->fetch_assoc()) ? $b['id'] : 1;
-
-        $name = htmlspecialchars($_POST['name']);
-        $dept = htmlspecialchars($_POST['department']);
-        $phone = htmlspecialchars($_POST['phone']);
-        $address = htmlspecialchars($_POST['address']);
-        $order_code = "PO-" . date("Ymd") . "-" . strtoupper(substr(uniqid(), -4));
-
-        $stmt = $db->prepare("INSERT INTO orders (order_code, batch_id, customer_name, customer_department, customer_phone, customer_address, total_price) VALUES (?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("sissssi", $order_code, $batch_id, $name, $dept, $phone, $address, $total_price);
+        // Simpan data identitas dan item belanja ke dalam session pending
+        $_SESSION['pending_order'] = [
+            'name' => htmlspecialchars($_POST['name']),
+            'department' => htmlspecialchars($_POST['department']),
+            'phone' => htmlspecialchars($_POST['phone']),
+            'address' => htmlspecialchars($_POST['address']),
+            'total_price' => $total_price,
+            'items' => $items // Menyimpan replika list item belanjaan
+        ];
         
-        if ($stmt->execute()) {
-            $order_id = $db->insert_id;
-            
-            $it_stmt = $db->prepare("INSERT INTO order_items (order_id, product_id, selected_size, quantity, price) VALUES (?, ?, ?, ?, ?)");
-            
-            foreach ($items as $it) {
-                $prod_id = $it['id'];
-                // Jika tidak ada ukuran, set NULL agar tersimpan rapi di DB
-                $sel_size = $it['selected_size'] !== '' ? $it['selected_size'] : NULL;
-                $item_qty = $it['qty'];
-                $item_price = intval($it['price']);
-                
-                $it_stmt->bind_param("iisii", $order_id, $prod_id, $sel_size, $item_qty, $item_price);
-                $it_stmt->execute();
-            }
-            
-            // Kosongkan keranjang di session
-            $_SESSION['cart'] = []; 
-            
-            // Redirect URL agar tidak terjadi error Double Form Submit Loop
-            header("Location: checkout.php?show_modal=1&code=" . $order_code . "&total=" . $total_price);
-            exit;
-        }
+        // Redirect URL untuk memicu pop-up pembayaran keluar secara aman
+        header("Location: checkout.php?show_modal=1");
+        exit;
     } else {
         header("Location: products.php");
         exit;
     }
 }
 
-// Langkah 2: Handle Upload Bukti Pembayaran dari Modal Pembayaran
+// =========================================================================
+// LANGKAH 2: HANDLE UPLOAD BUKTI & INSERT DATABASE SECARA BERSAMAAN
+// =========================================================================
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['upload_proof'])) {
-    $code = htmlspecialchars($_POST['order_code']);
-    if (isset($_FILES['proof']) && $_FILES['proof']['error'] === 0) {
-        $ext = pathinfo($_FILES['proof']['name'], PATHINFO_EXTENSION);
-        $filename = "PROOF_" . $code . "_" . time() . "." . $ext;
+    // Pastikan data session pending order tersedia
+    if (isset($_SESSION['pending_order']) && isset($_FILES['proof']) && $_FILES['proof']['error'] === 0) {
         
+        $pending = $_SESSION['pending_order'];
+        
+        // Ambil Gelombang Batch PO yang Sedang Aktif
+        $batch_q = $db->query("SELECT id FROM batches WHERE is_active = 1 LIMIT 1");
+        $batch_id = ($b = $batch_q->fetch_assoc()) ? $b['id'] : 1;
+
+        // Generate Kode Invoice Baru
+        $order_code = "PO-" . date("Ymd") . "-" . strtoupper(substr(uniqid(), -4));
+        
+        // Format penamaan berkas bukti transfer
+        $ext = pathinfo($_FILES['proof']['name'], PATHINFO_EXTENSION);
+        $filename = "PROOF_" . $order_code . "_" . time() . "." . $ext;
+        
+        // Pindahkan file gambar ke folder uploads terlebih dahulu
         if (move_uploaded_file($_FILES['proof']['tmp_name'], "uploads/" . $filename)) {
-            $db->query("UPDATE orders SET payment_proof = '$filename', status = 'Diproses' WHERE order_code = '$code'");
             
-            echo "<script>
-                window.location.href = 'track.php?code=" . $code . "&success=1';
-            </script>";
-            exit;
+            // Jalankan INSERT ke tabel orders utama beserta nama file bukti transfernya
+            $stmt = $db->prepare("INSERT INTO orders (order_code, batch_id, customer_name, customer_department, customer_phone, customer_address, total_price, payment_proof, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Diproses')");
+            $stmt->bind_param("sissssis", $order_code, $batch_id, $pending['name'], $pending['department'], $pending['phone'], $pending['address'], $pending['total_price'], $filename);
+            
+            if ($stmt->execute()) {
+                $order_id = $db->insert_id;
+                
+                // Jalankan INSERT sub item belanja ke order_items
+                $it_stmt = $db->prepare("INSERT INTO order_items (order_id, product_id, selected_size, quantity, price) VALUES (?, ?, ?, ?, ?)");
+                
+                foreach ($pending['items'] as $it) {
+                    $prod_id = $it['id'];
+                    $sel_size = $it['selected_size'] !== '' ? $it['selected_size'] : NULL;
+                    $item_qty = $it['qty'];
+                    $item_price = intval($it['price']);
+                    
+                    $it_stmt->bind_param("iisii", $order_id, $prod_id, $sel_size, $item_qty, $item_price);
+                    $it_stmt->execute();
+                }
+                $it_stmt->close();
+                
+                // Bersihkan semua data session penampung (Cart & Pending Order) karena transaksi sukses
+                $_SESSION['cart'] = []; 
+                unset($_SESSION['pending_order']);
+                
+                // Alihkan maba langsung ke halaman tracking status
+                echo "<script>
+                    window.location.href = 'track.php?code=" . $order_code . "&success=1';
+                </script>";
+                exit;
+            }
+            $stmt->close();
         }
+    } else {
+        // Jika session kedaluwarsa atau file corrupt, kembalikan ke checkout awal
+        header("Location: checkout.php");
+        exit;
     }
 }
 ?>
@@ -204,58 +227,52 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['upload_proof'])) {
                 </div>
 
             </div>
-
         <?php endif; ?>
   
-   <div id="paymentModal" class="fixed inset-0 bg-gray-900/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white w-full max-w-md rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl transition-all border border-gray-100 flex flex-col max-h-[90vh]">
-            
-            <div class="bg-gray-950 p-5 md:p-6 text-white text-center shrink-0">
-                <h3 class="text-base md:text-lg font-black tracking-tight">🔒 Transaksi Terkunci Aman</h3>
-                <p class="text-[10px] md:text-xxs text-gray-400 mt-1 uppercase tracking-widest font-bold">Langkah Terakhir: Verifikasi Pembayaran</p>
-            </div>
-            
-            <form method="POST" action="checkout.php" enctype="multipart/form-data" class="p-5 md:p-8 space-y-5 overflow-y-auto">
-                <input type="hidden" name="order_code" id="modal_order_code">
+        <div id="paymentModal" class="fixed inset-0 bg-gray-900/60 z-50 <?= $show_modal ? 'flex' : 'hidden'; ?> items-center justify-center p-4 backdrop-blur-sm">
+            <div class="bg-white w-full max-w-md rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl transition-all border border-gray-100 flex flex-col max-h-[90vh]">
                 
-                <div class="bg-gray-50 border border-gray-100 rounded-xl p-4 flex flex-col gap-2 text-center shadow-3xs">
-                    <span class="text-[11px] text-gray-400 font-bold uppercase tracking-wider block">Total Wajib Ditransfer</span>
-                    <span id="modal_total_display" class="text-3xl font-black text-[#06b7d2] tracking-tight"></span>
-                    <div class="mt-0.5">
-                        <span class="text-[9px] font-extrabold text-amber-600 bg-amber-50 border border-amber-200/60 px-2.5 py-1 rounded-md uppercase tracking-wider inline-block">Menunggu Bukti Transfer</span>
+                <div class="bg-gray-950 p-5 md:p-6 text-white text-center shrink-0">
+                    <h3 class="text-base md:text-lg font-black tracking-tight">🔒 Transaksi Terkunci Aman</h3>
+                    <p class="text-[10px] md:text-xxs text-gray-400 mt-1 uppercase tracking-widest font-bold">Langkah Terakhir: Verifikasi Pembayaran</p>
+                </div>
+                
+                <form method="POST" action="checkout.php" enctype="multipart/form-data" class="p-5 md:p-8 space-y-5 overflow-y-auto">
+                    
+                    <div class="bg-gray-50 border border-gray-100 rounded-xl p-4 flex flex-col gap-2 text-center shadow-3xs">
+                        <span class="text-[11px] text-gray-400 font-bold uppercase tracking-wider block">Total Wajib Ditransfer</span>
+                        <span class="text-3xl font-black text-[#06b7d2] tracking-tight">Rp <?= number_format($modal_total, 0, ',', '.'); ?></span>
+                        <div class="mt-0.5">
+                            <span class="text-[9px] font-extrabold text-amber-600 bg-amber-50 border border-amber-200/60 px-2.5 py-1 rounded-md uppercase tracking-wider inline-block">Menunggu Bukti Transfer</span>
+                        </div>
                     </div>
-                </div>
 
-                <div class="pt-2">
-                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-2 text-center">Tujuan Pembayaran (BCA)</span>
-                    <div class="bg-[#f0fbfd] border border-[#06b7d2]/30 rounded-xl p-5 text-center">
-                        <p class="text-[11px] font-bold text-[#06b7d2] uppercase tracking-widest">Bank Central Asia (BCA)</p>
-                        <p class="text-2xl font-mono font-black text-gray-900 tracking-widest mt-1.5 select-all">003-142-7109</p>
-                        <p class="text-[11px] text-gray-500 font-medium mt-1">A/N MUHAMAD FARREL RIZKY ALDOVA</p>
+                    <div class="pt-2">
+                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-2 text-center">Tujuan Pembayaran (BCA)</span>
+                        <div class="bg-[#f0fbfd] border border-[#06b7d2]/30 rounded-xl p-5 text-center">
+                            <p class="text-[11px] font-bold text-[#06b7d2] uppercase tracking-widest">Bank Central Asia (BCA)</p>
+                            <p class="text-2xl font-mono font-black text-gray-900 tracking-widest mt-1.5 select-all">003-142-7109</p>
+                            <p class="text-[11px] text-gray-500 font-medium mt-1">A/N MUHAMAD FARREL RIZKY ALDOVA</p>
+                        </div>
                     </div>
-                </div>
 
-                <div class="border-t border-gray-100 pt-5">
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2 text-center">Upload Bukti Transfer *</label>
-                    <input type="file" name="proof" required accept="image/*" class="w-full text-xs text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-[#f0fbfd] file:text-[#06b7d2] hover:file:bg-[#dff6f9] cursor-pointer border border-gray-200 rounded-xl p-1 bg-gray-50">
-                </div>
+                    <div class="border-t border-gray-100 pt-5">
+                        <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2 text-center">Upload Bukti Transfer *</label>
+                        <input type="file" name="proof" required accept="image/*" class="w-full text-xs text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-[#f0fbfd] file:text-[#06b7d2] hover:file:bg-[#dff6f9] cursor-pointer border border-gray-200 rounded-xl p-1 bg-gray-50">
+                    </div>
 
-                <button type="submit" name="upload_proof" class="w-full bg-[#06b7d2] hover:bg-[#0594a8] text-white font-bold py-3.5 rounded-xl shadow-md transition text-sm cursor-pointer mt-2">
-                    Kirim Bukti Pembayaran Resmi
-                </button>
-                <p class="text-center text-[10px] text-red-500 font-semibold italic mt-2 px-2">⚠️ Selesaikan langkah ini. Pembayaran otomatis terkunci di halaman ini jika ditutup.</p>
-            </form>
+                    <button type="submit" name="upload_proof" class="w-full bg-[#06b7d2] hover:bg-[#0594a8] text-white font-bold py-3.5 rounded-xl shadow-md transition text-sm cursor-pointer mt-2">
+                        Kirim Bukti Pembayaran Resmi
+                    </button>
+                    
+                    <div class="text-center pt-1">
+                        <a href="checkout.php" class="text-xs font-semibold text-gray-400 hover:text-red-500 transition-all">← Batal & Ubah Informasi Form</a>
+                    </div>
+                    <p class="text-center text-[10px] text-red-400 font-semibold italic mt-2 px-2">*Data Anda aman dan tidak akan hilang. Pembelian baru tercatat di database setelah bukti terunggah.</p>
+                </form>
+            </div>
         </div>
-    </div>
 
-    <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        <?php if($show_modal): ?>
-            document.getElementById('modal_order_code').value = '<?= $modal_code; ?>';
-            document.getElementById('modal_total_display').innerText = 'Rp ' + parseInt(<?= $modal_total; ?>).toLocaleString('id-ID');
-            document.getElementById('paymentModal').classList.remove('hidden');
-        <?php endif; ?>
-    });
-    </script>
+    </div>
 </body>
 </html>

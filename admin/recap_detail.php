@@ -28,35 +28,84 @@ if (!empty($filter_batch)) {
 }
 
 // ----------------------------------------------------------------------
+// DATA REKAPAN MANUAL (OVERRIDE UNTUK SEPATU YANG TERPOTONG)
+// ----------------------------------------------------------------------
+$manual_shoes_map = [
+    'bhrama' => '42',
+    'gus muhammad arya' => '42',
+    'zhafira az zahra' => '40',
+    'fadhil alauddin' => '43',
+    'faizah nailatul karimah' => '37',
+    'kayyis muhammad ridho' => '45',
+    'denisya amaliana putri' => '39',
+    'iqlima nailah salwa' => '41',
+    'terine benetta' => '40',
+    'gyanendra cahaya kesuma' => '44',
+    'darren daiva' => '44',
+    'elberd mukuan' => '43',
+    'kezia avril felicia' => '41',
+    'zaidan reifan al faros' => '43',
+    'mohammad farrel ramadhan tito' => '43',
+    'alina citra mandasari' => '38',
+    'nahlita vidya arulyuna' => '41',
+    'eithen rafay pasah' => '42',
+    'ardha barani shidqini' => '42',
+    'kimberly putri ananda' => '39',
+    'nayla langit rizki' => '39',
+    'maria beata grace artajati' => '38',
+    'monica citra lestari' => '40',
+    'timothy togarma gaho' => '40',
+    'sabrina audya margadien' => '41',
+    'maria gonza yovita beu' => '39',
+    'adrian efron jhon' => '41',
+    'nabilah putri wahyudi' => '37',
+    'muhammad adnan' => '44',
+    'anggita permata indra putri nasir' => '37',
+    'muhammad abdanyal malakan' => '41',
+    'muhammad adi raihan' => '41',
+    'putri bening nurani' => '40',
+    'radya christy putri pambayun' => '40',
+    'alimah rasyidah salsabila putri' => '39',
+    'arif rafi algifarri' => '43',
+    'keira aurelia trixie' => '37',
+    'ahmad hanif al miqdad' => '38',
+    'ananta muhammad fikar' => '42'
+];
+
+// ----------------------------------------------------------------------
 // DATA CONTAINER (Wadah Penampung Hasil Perhitungan)
 // ----------------------------------------------------------------------
-$rekap_satuan = []; // Khusus menampung item reguler/satuan (termasuk pecahan isi bundle)
-$rekap_bundle = []; // Khusus menampung paket bundle utama
+$rekap_satuan = []; 
+$rekap_bundle = []; 
 
-// Ambil semua item pesanan berdasarkan filter batch
-$query_orders = "SELECT oi.product_id, oi.quantity, oi.selected_size, p.name, p.type 
+// Ambil semua item pesanan berdasarkan filter batch beserta nama customer untuk pencocokan manual
+$query_orders = "SELECT oi.product_id, oi.quantity, oi.selected_size, p.name as product_name, p.type, o.customer_name 
                  FROM order_items oi 
                  JOIN orders o ON oi.order_id = o.id 
                  JOIN products p ON oi.product_id = p.id 
                  $where_clause";
 $res_orders = $db->query($query_orders);
 
+// ID Produk Sepatu berdasarkan database Anda
+$id_pantofel_cowok = 11;
+$id_pantofel_cewek = 12;
+
 while ($row = $res_orders->fetch_assoc()) {
     $pid = intval($row['product_id']);
     $qty = intval($row['quantity']);
-    $pname = $row['name'];
+    $pname = $row['product_name'];
     $ptype = $row['type'];
-    $size = !empty($row['selected_size']) ? $row['selected_size'] : 'All Size';
+    $raw_size = !empty($row['selected_size']) ? $row['selected_size'] : 'All Size';
+    $customer_name_lower = strtolower(trim($row['customer_name']));
 
     if ($ptype === 'bundle') {
+        // 1. Masukkan ke rekap bundle utama
         if (!isset($rekap_bundle[$pid])) {
-            $rekap_bundle[$pid] = [
-                'name' => $pname,
-                'total_qty' => 0
-            ];
+            $rekap_bundle[$pid] = ['name' => $pname, 'total_qty' => 0];
         }
         $rekap_bundle[$pid]['total_qty'] += $qty;
 
+        // 2. Ambil relasi produk di dalam bundle tersebut
         $stmt_bundle = $db->prepare("SELECT br.regular_product_id, p.name FROM bundle_relations br JOIN products p ON br.regular_product_id = p.id WHERE br.bundle_product_id = ?");
         $stmt_bundle->bind_param("i", $pid);
         $stmt_bundle->execute();
@@ -65,32 +114,67 @@ while ($row = $res_orders->fetch_assoc()) {
         while ($sub = $res_bundle->fetch_assoc()) {
             $sub_id = intval($sub['regular_product_id']);
             $sub_name = $sub['name'];
+            $final_sub_size = 'All Size';
+
+            // Cek apakah produk ini adalah sepatu pantofel
+            $is_sepatu = ($sub_id === $id_pantofel_cowok || $sub_id === $id_pantofel_cewek);
+
+            // LOGIK CHECK: Cek apakah nama customer ada di daftar rekapan manual
+            $matched_manual_size = false;
+            if ($is_sepatu) {
+                foreach ($manual_shoes_map as $manual_name => $manual_size) {
+                    if (strpos($customer_name_lower, $manual_name) !== false) {
+                        $final_sub_size = $manual_size; // Langsung kunci ukuran manual di sini
+                        $matched_manual_size = true;
+                        
+                        // Menentukan gender sepatu berdasarkan isi text bundle
+                        if (strpos(strtolower($raw_size), 'celana') !== false) {
+                            $sub_id = $id_pantofel_cowok;
+                            $sub_name = 'Sepatu Pantopel Cowok';
+                        } else {
+                            $sub_id = $id_pantofel_cewek;
+                            $sub_name = 'Sepatu Pantopel Cewek';
+                        }
+                        break;
+                    }
+                }
+            }
+
+            // JIKA TIDAK COCOK DATA MANUAL, BARU JALANKAN REGEX BAWAAN
+            if (!$matched_manual_size && $raw_size !== 'All Size') {
+                $escaped_sub_name = preg_quote($sub_name, '/');
+                if (preg_match('/' . $escaped_sub_name . '\s*:\s*([^,]+)/i', $raw_size, $matches)) {
+                    $final_sub_size = trim($matches[1]);
+                }
+            }
 
             if (!isset($rekap_satuan[$sub_id])) {
                 $rekap_satuan[$sub_id] = ['name' => $sub_name, 'total_qty' => 0, 'sizes' => []];
             }
             $rekap_satuan[$sub_id]['total_qty'] += $qty;
 
-            if (!isset($rekap_satuan[$sub_id]['sizes'][$size])) {
-                $rekap_satuan[$sub_id]['sizes'][$size] = 0;
+            if (!isset($rekap_satuan[$sub_id]['sizes'][$final_sub_size])) {
+                $rekap_satuan[$sub_id]['sizes'][$final_sub_size] = 0;
             }
-            $rekap_satuan[$sub_id]['sizes'][$size] += $qty;
+            $rekap_satuan[$sub_id]['sizes'][$final_sub_size] += $qty;
         }
         $stmt_bundle->close();
 
     } else {
+        // Produk Reguler / Eceran biasa
         if (!isset($rekap_satuan[$pid])) {
             $rekap_satuan[$pid] = ['name' => $pname, 'total_qty' => 0, 'sizes' => []];
         }
         $rekap_satuan[$pid]['total_qty'] += $qty;
 
-        if (!isset($rekap_satuan[$pid]['sizes'][$size])) {
-            $rekap_satuan[$pid]['sizes'][$size] = 0;
+        if (!isset($rekap_satuan[$pid]['sizes'][$raw_size])) {
+            $rekap_satuan[$pid]['sizes'][$raw_size] = 0;
         }
-        $rekap_satuan[$pid]['sizes'][$size] += $qty;
+        $rekap_satuan[$pid]['sizes'][$raw_size] += $qty;
     }
 }
 
+// Urutkan alfabetis berdasarkan Nama Produk
 uasort($rekap_satuan, function($a, $b) { return strcmp($a['name'], $b['name']); });
 uasort($rekap_bundle, function($a, $b) { return strcmp($a['name'], $b['name']); });
 ?>
@@ -129,16 +213,13 @@ uasort($rekap_bundle, function($a, $b) { return strcmp($a['name'], $b['name']); 
                 box-shadow: none !important;
                 border-radius: 0 !important;
             }
-            /* Paksa semua elemen cetak melar ke bawah dan dilarang menyembunyikan teks */
             th, td, div, span {
                 overflow: visible !important;
                 white-space: normal !important;
                 word-break: break-word !important;
                 text-overflow: clip !important;
             }
-            @page {
-                margin: 1cm;
-            }
+            @page { margin: 1cm; }
         }
     </style>
 </head>
@@ -181,18 +262,16 @@ uasort($rekap_bundle, function($a, $b) { return strcmp($a['name'], $b['name']); 
         </aside>
 
         <main class="flex-1 p-8 lg:p-12 overflow-y-auto">
-            
             <header class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-8 pb-6 border-b border-gray-200 print:hidden">
                 <div>
                     <h1 class="text-2xl font-black text-gray-950 tracking-tight">Perhitungan Rekap Barang</h1>
-                    <p class="text-gray-400 text-xs mt-1">Total jumlah kebutuhan produksi kain bersih (Otomatis memecah isi paket bundle).</p>
+                    <p class="text-gray-400 text-xs mt-1">Total produksi bersih (Otomatis memecah bundle & memperbaiki data size sepatu maba yang terpotong).</p>
                 </div>
-                
                 <form method="GET" class="flex items-center gap-2 bg-white p-2 rounded-xl border border-gray-200 shadow-xs">
-                    <span class="text-xs font-semibold text-gray-500 px-1">Batch:</span>
+                    <span class="text-xs font-semibold text-gray-500 px-1">Batch Filter:</span>
                     <select name="batch_id" onchange="this.form.submit()" class="border border-gray-200 bg-white px-3 py-1.5 rounded-lg text-xs font-bold text-gray-700 focus:outline-none">
                         <?php while($bt = $all_batches->fetch_assoc()): ?>
-                            <option value="<?= $bt['id']; ?>" <?= $filter_batch == $bt['id'] ? 'selected' : ''; ?>><?= $bt['batch_name']; ?></option>
+                            <option value="<?= $bt['id']; ?>" <?= $filter_batch == $bt['id'] ? 'selected' : ''; ?>><?= htmlspecialchars($bt['batch_name']); ?></option>
                         <?php endwhile; ?>
                     </select>
                 </form>
@@ -210,7 +289,7 @@ uasort($rekap_bundle, function($a, $b) { return strcmp($a['name'], $b['name']); 
                         <i class="fa-solid fa-shirt"></i> 
                         1. REKAP ITEM SATUAN BERSIH (UNTUK KONVEKSI / VENDOR)
                     </h2>
-                    <p class="text-gray-400 text-xs mt-0.5">Tabel ini menampilkan total kebutuhan kain asli.</p>
+                    <p class="text-gray-400 text-xs mt-0.5">Tabel menampilkan total kuantitas asli. Data sepatu terpotong otomatis diklasifikasi berdasarkan pakaian utama (Celana = Cowok, Rok = Cewek).</p>
                 </div>
 
                 <div class="overflow-x-auto">
@@ -219,7 +298,7 @@ uasort($rekap_bundle, function($a, $b) { return strcmp($a['name'], $b['name']); 
                             <tr class="border-b border-gray-200 bg-gray-50 text-[11px] text-gray-500 font-bold uppercase tracking-wider">
                                 <th class="py-3 px-4 w-12 text-center">No</th>
                                 <th class="py-3 px-4">Nama Barang (Atribut Maba)</th>
-                                <th class="py-3 px-4">Rincian Total per Ukuran (Size)</th>
+                                <th class="py-3 px-4">Rincian Kuantitas per Ukuran (Size)</th>
                                 <th class="py-3 px-4 text-center bg-indigo-50 text-indigo-700 font-bold w-32">Total Bersih</th>
                             </tr>
                         </thead>
@@ -232,17 +311,17 @@ uasort($rekap_bundle, function($a, $b) { return strcmp($a['name'], $b['name']); 
                                         <span class="text-gray-900 font-bold text-sm block whitespace-normal break-words"><?= htmlspecialchars($data['name']); ?></span>
                                     </td>
                                     <td class="py-4 px-4">
-                                        <div class="space-y-2 w-full min-w-[300px]">
-                                            <?php foreach($data['sizes'] as $s_name => $s_qty): ?>
-                                                <div class="block p-3 bg-gray-100 border border-gray-200/60 rounded-lg font-semibold text-gray-700 text-[12px] avoid-break overflow-visible clear-both">
-                                                    <div class="whitespace-normal break-words text-gray-900 leading-relaxed overflow-visible">
-                                                        Size: <span class="font-bold text-indigo-950"><?= htmlspecialchars($s_name); ?></span>
-                                                    </div>
-                                                    <div class="text-right mt-1.5">
-                                                        <span class="inline-block bg-white text-indigo-600 font-bold font-mono px-2.5 py-1 rounded border border-gray-200 text-xs">
-                                                            <?= $s_qty; ?> pcs
-                                                        </span>
-                                                    </div>
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 w-full min-w-[250px]">
+                                            <?php 
+                                            // Urutkan size agar rapi dari kecil ke besar
+                                            ksort($data['sizes']); 
+                                            foreach($data['sizes'] as $s_name => $s_qty): 
+                                            ?>
+                                                <div class="flex justify-between items-center p-2 bg-gray-50 border border-gray-200/60 rounded-lg font-semibold text-gray-700 text-[11px] avoid-break">
+                                                    <span class="text-gray-900">Size: <strong class="text-indigo-950 font-bold"><?= htmlspecialchars($s_name); ?></strong></span>
+                                                    <span class="bg-white text-indigo-600 font-bold font-mono px-2 py-0.5 rounded border border-gray-200 text-[11px]">
+                                                        <?= $s_qty; ?> pcs
+                                                    </span>
                                                 </div>
                                             <?php endforeach; ?>
                                         </div>
@@ -254,7 +333,7 @@ uasort($rekap_bundle, function($a, $b) { return strcmp($a['name'], $b['name']); 
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="4" class="py-8 text-center text-gray-400 italic">Belum ada data pesanan barang satuan.</td>
+                                    <td colspan="4" class="py-8 text-center text-gray-400 italic">Belum ada data transaksi pesanan barang satuan pada batch ini.</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>
@@ -269,7 +348,6 @@ uasort($rekap_bundle, function($a, $b) { return strcmp($a['name'], $b['name']); 
                         2. REKAP TOTAL BUNDLE UTAMA (UNTUK CEK PACKING / STOK KEMASAN)
                     </h2>
                 </div>
-
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse text-xs table-auto">
                         <thead>
@@ -301,9 +379,7 @@ uasort($rekap_bundle, function($a, $b) { return strcmp($a['name'], $b['name']); 
                     </table>
                 </div>
             </div>
-
         </main>
     </div>
-
 </body>
 </html>

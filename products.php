@@ -97,10 +97,11 @@ $all_products = $db->query($query);
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
             <?php if($all_products->num_rows > 0): ?>
                 <?php while($row = $all_products->fetch_assoc()): ?>
-                <div class="bg-white border border-gray-200 rounded-xl overflow-hidden transition flex flex-col justify-between hover:border-gray-400/80 p-1.5 md:p-2 shadow-2xs">
+                
+                <div onclick="window.location.href='detail.php?id=<?= $row['id']; ?>';" class="group bg-white border border-gray-200 rounded-xl overflow-hidden transition flex flex-col justify-between hover:border-gray-400/80 p-1.5 md:p-2 shadow-2xs cursor-pointer duration-300">
                     
                     <div class="relative overflow-hidden rounded-lg bg-[#fcfcfc]">
-                        <img src="uploads/<?= $row['main_image'] ?? 'placeholder.jpg'; ?>" class="w-full h-32 sm:h-44 md:h-48 object-cover border border-gray-100/40" onerror="this.src='uploads/placeholder.jpg'">
+                        <img src="uploads/<?= $row['main_image'] ?? 'placeholder.jpg'; ?>" class="w-full h-32 sm:h-44 md:h-48 object-cover border border-gray-100/40 group-hover:scale-103 transition-transform duration-500" onerror="this.src='uploads/placeholder.jpg'">
                     </div>
                     
                     <div class="p-2 md:p-4 flex-1 flex flex-col justify-between">
@@ -108,16 +109,17 @@ $all_products = $db->query($query);
                             <span class="text-[8px] md:text-[9px] font-black px-1.5 py-0.5 rounded-md border border-gray-200 bg-gray-50 text-gray-400 uppercase tracking-wider inline-block">
                                 <i class="fa-solid fa-tag text-[7px] mr-1"></i><?= $row['type']; ?>
                             </span>
-                            <h3 class="font-bold text-gray-950 text-xs md:text-sm tracking-tight truncate" title="<?= htmlspecialchars($row['name']); ?>"><?= htmlspecialchars($row['name']); ?></h3>
+                            <h3 class="font-bold text-gray-950 text-xs md:text-sm tracking-tight truncate group-hover:text-[#06b7d2] transition-colors" title="<?= htmlspecialchars($row['name']); ?>"><?= htmlspecialchars($row['name']); ?></h3>
                             <p class="text-gray-400 text-[11px] md:text-xs line-clamp-1 md:line-clamp-2 leading-relaxed font-medium"><?= htmlspecialchars($row['description']); ?></p>
                         </div>
                         
                         <div class="mt-3 md:mt-5 pt-2 md:pt-3 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                             <span class="text-gray-950 font-black text-xs md:text-sm">Rp<?= number_format($row['price'], 0, ',', '.'); ?></span>
-                            <div class="flex gap-1 w-full sm:w-auto justify-end">
+                            
+                            <div class="flex gap-1 w-full sm:w-auto justify-end" onclick="event.stopPropagation();">
                                 <a href="detail.php?id=<?= $row['id']; ?>" class="w-7 h-7 md:w-8 md:h-8 rounded-lg border border-gray-200 text-gray-500 hover:text-gray-900 hover:bg-gray-50 flex items-center justify-center transition text-[10px] md:text-xs shrink-0" title="Detail"><i class="fa-solid fa-eye"></i></a>
                                 
-                               <button onclick="handleAddToCart(<?= $row['id']; ?>, '<?= htmlspecialchars($row['available_sizes'] ?? '', ENT_QUOTES); ?>', '<?= $row['type']; ?>')" class="flex-1 sm:flex-none bg-gray-950 hover:bg-gray-800 text-white text-[10px] md:text-xs px-2.5 py-1 md:py-1.5 rounded-lg font-bold transition cursor-pointer flex items-center justify-center gap-1">
+                                <button onclick="handleAddToCart(<?= $row['id']; ?>, '<?= htmlspecialchars($row['available_sizes'] ?? '', ENT_QUOTES); ?>', '<?= $row['type']; ?>')" class="flex-1 sm:flex-none bg-gray-950 hover:bg-gray-800 text-white text-[10px] md:text-xs px-2.5 py-1 md:py-1.5 rounded-lg font-bold transition cursor-pointer flex items-center justify-center gap-1">
                                     <i class="fa-solid fa-plus text-[9px]"></i> <span>Bag</span>
                                 </button>
                             </div>
@@ -304,7 +306,6 @@ $all_products = $db->query($query);
         .catch(error => console.error("Fetch error:", error));
     }
 
-  // FITUR BARU: Cek ukuran dengan Pop-Up Premium (Custom HTML Pill Buttons)
     function handleAddToCart(id, sizesStr, type) {
         if (type === 'bundle') {
             window.location.href = 'detail.php?id=' + id;
@@ -314,7 +315,6 @@ $all_products = $db->query($query);
         if (sizesStr && sizesStr.trim() !== '') {
             const sizesArray = sizesStr.split(',').map(s => s.trim()).filter(s => s);
             
-            // KITA BUAT DESAIN TOMBOL UKURAN SENDIRI (Gaya Pill Premium)
             let sizesHtml = `
                 <p class="text-xs text-gray-400 font-medium mb-5">Pastikan ukuran atribut sesuai dengan panduan sizechart.</p>
                 <div class="flex flex-wrap justify-center gap-2.5">
@@ -334,7 +334,7 @@ $all_products = $db->query($query);
 
             Swal.fire({
                 title: 'Pilih Ukuran',
-                html: sizesHtml, // Masukkan desain kustom kita ke sini
+                html: sizesHtml, 
                 showCancelButton: true,
                 confirmButtonText: 'Tambah ke Tas',
                 cancelButtonText: 'Batal',
@@ -343,20 +343,15 @@ $all_products = $db->query($query);
                 customClass: {
                     popup: 'rounded-3xl border border-gray-100 shadow-2xl bg-white w-[92%] md:w-[28rem] p-5 md:p-8',
                     title: 'text-lg md:text-xl font-black text-gray-950 uppercase tracking-tight mb-2',
-                    
-                    // PERBAIKAN: Wadah tombol dipaksa berjejer lurus dengan jarak pas
                     actions: 'flex flex-row gap-3 w-full mt-8',
-                    
-                    // PERBAIKAN: flex-1 membuat ukuran 50:50, !m-0 membunuh margin bawaan SweetAlert, py-4 membuat tombol lebih gemuk/premium
                     confirmButton: 'flex-1 bg-[#06b7d2] hover:bg-[#0594a8] text-white text-xs md:text-sm font-bold py-3.5 md:py-4 rounded-xl transition shadow-md cursor-pointer !m-0',
                     cancelButton: 'flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs md:text-sm font-bold py-3.5 md:py-4 rounded-xl transition cursor-pointer !m-0'
                 },
-                // Logika untuk menangkap pilihan ukuran dari HTML kustom kita
                 preConfirm: () => {
                     const selectedSize = Swal.getPopup().querySelector('input[name="premium_size"]:checked');
                     if (!selectedSize) {
                         Swal.showValidationMessage('Kamu wajib memilih salah satu ukuran terlebih dahulu!');
-                        return false; // Mencegah pop-up tertutup kalau belum milih
+                        return false; 
                     }
                     return selectedSize.value;
                 }

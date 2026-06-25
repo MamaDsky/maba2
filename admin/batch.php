@@ -1,5 +1,12 @@
 <?php
+session_start();
 require_once '../config/database.php';
+
+// Proteksi halaman admin
+if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
+    header("Location: login.php");
+    exit;
+}
 $db = (new Database())->getConnection();
 
 // Proses Aksi Hapus Batch (Delete)
